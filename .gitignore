@@ -2,4 +2,6 @@
 poetry.lock
 data/*
 notebooks/random.ipynb
-result_plots
+results/*
+workshop-results
+.ruff_cache
