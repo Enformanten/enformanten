@@ -6,3 +6,4 @@ notebooks/random.ipynb
 results/*
 workshop-results
 .ruff_cache
+config.cfg
