@@ -1,6 +1,7 @@
 .venv
 poetry.lock
 data/*
+!data/.gitkeep
 notebooks/random.ipynb
 results/*
 workshop-results
