@@ -18,7 +18,7 @@ def flow(
     for kommune in data["KOMMUNE"].unique():
         print(f"Running flow for {kommune}")
 
-        est_contamination = estimate_usage(
+        est_usage = estimate_usage(
             data, kommune, usage_coeff=usage_coeff, usage_limit=usage_limit
         )
 
@@ -33,7 +33,7 @@ def flow(
             .apply(
                 p.UsageModel.run_model,
                 features=room_features,
-                contamination=est_contamination,
+                usage=est_usage,
                 random_state=random_state,
             )
             .reset_index(drop=True)
