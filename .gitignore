@@ -1,4 +1,5 @@
 .venv
+.env
 poetry.lock
 data/*
 !data/.gitkeep

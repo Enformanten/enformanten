@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+    <style>
+        body {
+            background-color: #f2f2f2;
+        }
+        h1 {
+            color: #00509e;
+            text-align: center;
+        }
+        .iframe-container {
+            border-radius: 12px;
+            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+            margin: 10px;
+            width: 800px;
+            height: 600px;
+        }
+        .arrow {
+            cursor: pointer;
+            font-size: 24px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Dashboard</h1>
+    <div id="metrics">
+        <!-- Add your header metrics here -->
+    </div>
+    <span id="left-arrow" class="arrow">&#8592;</span>
+    <div id="iframe-container" class="iframe-container">
+        <!-- iframes will be appended here -->
+    </div>
+    <span id="right-arrow" class="arrow">&#8594;</span>
+    <script src="script.js"></script>
+</body>
+</html>

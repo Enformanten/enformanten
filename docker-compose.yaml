@@ -1,0 +1,35 @@
+version: '0.1'
+
+services:
+
+  tilly:
+    image: tilly
+    build:
+      context: .
+      args:
+        GIT_METADATA: docker-compose
+    command: uvicorn api.main:app --host 0.0.0.0 --reload
+    container_name: tilly
+    depends_on:
+      db:
+        condition: service_started
+    env_file:
+     - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/dev
+      PREDICTION_ENDPOINT: http://localhost:8001
+    ports:
+      - 8000:8000
+    restart: always
+    volumes:
+      - ./api:/app/api
+
+  db:
+    image: postgres
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: dev
+    ports:
+      - 5432:5432
