@@ -22,3 +22,5 @@ config.cfg
 */*/*/*/*/*/*/*/*/*/*/__pycache__/
  *.pyc
 tilly/api/database/data/__pycache__/models.cpython-310.pyc
+tilly/dashboard/plots
+users.db

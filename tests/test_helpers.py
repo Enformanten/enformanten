@@ -1,4 +1,4 @@
-from tilly.api.helpers import merge
+from tilly.helpers import merge
 
 
 def test_merge_dict():

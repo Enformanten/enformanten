@@ -1,14 +1,58 @@
-from configparser import ConfigParser
+from ast import literal_eval
+from decouple import config
 
-config = ConfigParser()
-config.read("config.cfg")
 
-DATA_PATH: str = config["DATA"]["DATA_PATH"]
-OUTPUT_COLUMNS: list = config["FORMAT"]["OUTPUT_COLUMNS"]
+GIT_METADATA = config("GIT_METADATA", default="local")
 
-FEATURES: list = config["MODELLING"]["FEATURES"]
+##################
+# USERS AND USERS DB
+##################
 
-USAGE_COEFF = float(config["MODELLING"]["USAGE_COEFF"])
-USAGE_LIMIT = float(config["MODELLING"]["USAGE_LIMIT"])
-RANDOM_STATE = int(config["MODELLING"]["RANDOM_STATE"])
-APPLY_RULES = bool(config["MODELLING"]["APPLY_RULES"])
+SECRET = config("SECRET")
+USERS = config("USERS", cast=literal_eval)
+USER_DATABASE_URL = config("DATABASE_URL")
+
+################
+# API
+################
+
+TITLE = "Tilly API"
+DEBUG = True
+DESCRIPTION = "Unsupervised anomaly detection for room usage"
+PLOT_DIR = "dashboard/plots"
+
+
+################
+# DATA FACTORY DB
+################
+
+# Table to load training data from
+TRAINING_TABLE_NAME = "4_FEATURIZ_DRIFTOPTIMERING_TRAINING_TEST"
+
+# Table to load data to predict on from
+UNSCORED_TABLE_NAME = "4_FEATURIZ_DRIFTOPTIMERING_PREDICT_TEST"
+
+# Table to append predictions in
+SCORED_TABLE_NAME = "1_RAW_DRIFTOPTIMERINGSMODEL_TEST"
+
+# snowflake credentials
+SNOWFLAKE_CREDENTIALS = config("SNOWFLAKE_CREDENTIALS", cast=literal_eval)
+
+
+OUTPUT_COLUMNS = [
+    "DATE",
+    "TIME",
+    "DATETIME",
+    "ID",
+    "KOMMUNE",
+    "IN_USAGE",
+    "anomaly_score",
+]
+
+
+################
+# MODEL
+################
+MODEL_PARAMS = {"n_estimators": 100, "random_state": 42}
+
+FEATURES = ["CO2_ACC"]

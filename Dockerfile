@@ -6,11 +6,12 @@ COPY requirements.txt ./
 RUN PIP_ROOT_USER_ACTION=ignore pip install --upgrade pip && \
     PIP_ROOT_USER_ACTION=ignore pip install  -r requirements.txt
 
-COPY api ./api
+COPY tilly ./tilly
+COPY .env .env
 
 ARG GIT_METADATA=dockerfile
 ENV GIT_METADATA=$GIT_METADATA
 ENV PYTHONPATH app
 
 EXPOSE 8000
-CMD ["gunicorn", "api.main:app", "--workers", "1", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "--TIMEut",  "600"]
+CMD ["gunicorn", "tilly.main:app", "--workers", "1", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "--timeout",  "600"]
