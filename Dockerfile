@@ -13,4 +13,4 @@ ENV GIT_METADATA=$GIT_METADATA
 ENV PYTHONPATH app
 
 EXPOSE 8000
-CMD ["gunicorn", "api.main:app", "--workers", "1", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "--timeout",  "600"]
+CMD ["gunicorn", "api.main:app", "--workers", "1", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "--TIMEut",  "600"]

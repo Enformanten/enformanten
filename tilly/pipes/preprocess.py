@@ -19,7 +19,7 @@ def drop_inactive_ranges(df, range_length=5):
 
 
 def add_date_range_group(grp):
-    grp["DATE_RANGE_GROUP"] = grp["DATETIME"].transform(
+    grp["Date_RANGE_GROUP"] = grp["DATETIME"].transform(
         lambda x: (x.diff().dt.total_seconds() / 60).ne(15).cumsum()
     )
     return grp
@@ -32,19 +32,19 @@ def acceleration_features(df):
         .apply(add_date_range_group)
         .reset_index(drop=True)
         .assign(
-            CO2_ACC=lambda d: d.groupby(["ID", "DATE_RANGE_GROUP"])["CO2"]
+            CO2_ACC=lambda d: d.groupby(["ID", "Date_RANGE_GROUP"])["CO2"]
             .ffill()
             .pct_change()
             .fillna(0),
-            TEMP_ACC=lambda d: d.groupby(["ID", "DATE_RANGE_GROUP"])["TEMP"]
+            TEMP_ACC=lambda d: d.groupby(["ID", "Date_RANGE_GROUP"])["TEMP"]
             .ffill()
             .pct_change()
             .fillna(0),
-            MOTION_ACC=lambda d: d.groupby(["ID", "DATE_RANGE_GROUP"])["MOTION"]
+            MOTION_ACC=lambda d: d.groupby(["ID", "Date_RANGE_GROUP"])["MOTION"]
             .ffill()
             .pct_change()
             .fillna(0),
-            IAQ_ACC=lambda d: d.groupby(["ID", "DATE_RANGE_GROUP"])["IAQ"]
+            IAQ_ACC=lambda d: d.groupby(["ID", "Date_RANGE_GROUP"])["IAQ"]
             .ffill()
             .pct_change()
             .fillna(0),
@@ -57,18 +57,18 @@ def preprocess_for_modelling(df):
         AKTIVITET=lambda d: pd.factorize(d["TIDSPUNKT_TYPE"])[0],
         DOW=lambda d: d["DATETIME"].dt.dayofweek,
         HOUR=lambda d: d["DATETIME"].dt.hour,
-        DAY_TYPE=lambda d: pd.factorize(d["TYPE"])[0],
-        BOOKET=lambda d: d["BOOKET"].fillna(0.0),
+        DAY_TYPE=lambda d: pd.factorize(d["Type"])[0],
+        Booket=lambda d: d["Booket"].fillna(0.0),
     ).drop(
         columns=[
-            "DATE",
+            "Date",
             "TIDSPUNKT_TYPE",
             "TYPE",
-            "DATE_RANGE_GROUP",
-            "DAYNAME",
+            "Date_RANGE_GROUP",
+            "Dayname",
             "TIME",
             "SKOLE",
             "KOMMUNE",
-            "NAVN",
+            "Navn",
         ]
     )

@@ -2,11 +2,10 @@ import contextlib
 from fastapi_users.exceptions import UserAlreadyExists
 from sqlalchemy.exc import IntegrityError
 
-from api.config import USERS
-from api.database.db import get_async_session
-from api.users.auth import get_user_db, get_user_manager
-from api.users.schemas import UserCreate
-
+from tilly.api.config import USERS
+from tilly.api.database.users.crud import get_async_session
+from tilly.api.users.auth import get_user_db, get_user_manager
+from tilly.api.users.schemas import UserCreate
 
 get_async_session_context = contextlib.asynccontextmanager(get_async_session)
 get_user_db_context = contextlib.asynccontextmanager(get_user_db)
@@ -30,7 +29,6 @@ async def create_user(
                         )
                     )
                     print(f"User created {user}")
-
     except UserAlreadyExists:
         print(f"User {email} already exists")
 

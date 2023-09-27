@@ -1,12 +1,12 @@
 from fastapi import APIRouter, BackgroundTasks, Depends, Request
 from loguru import logger
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from pandas import DataFrame
 
-from api.database.data import crud
-from api.database.data.db import get_async_session
-from api.services.ml.trainer import train_models
-from api.services.dashboard import update_dashboard
+from tilly.api.database.data import crud
+from tilly.api.database.data.db import get_session
+from tilly.api.services.ml.trainer import train_models
+from tilly.api.services.dashboard import update_dashboard
 
 router = APIRouter()
 
@@ -21,7 +21,7 @@ def wrapper(session):
 def train(
     request: Request,
     background_tasks: BackgroundTasks,
-    session: AsyncSession = Depends(get_async_session),
+    session: Session = Depends(get_session),
 ):
     background_tasks.add_task(wrapper, session)
 

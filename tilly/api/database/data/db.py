@@ -1,27 +1,21 @@
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import async_sessionmaker
-from typing import AsyncGenerator
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from typing import Generator
 
-from api.config import SNOWFLAKE_CREDENTIALS
+from tilly.api.config import SNOWFLAKE_CREDENTIALS
 
 
 # Define your Snowflake connection parameters
 SNOWFLAKE_URL = (
     "snowflake://{user}:{password}@{account}"
-    "/{database}/{schema}?warehouse={warehouse}&role={role_name}"
+    "/{database}/{schema}?warehouse={warehouse}&role={role}"
 ).format(**SNOWFLAKE_CREDENTIALS)
 
-
-# Create an async engine
-engine = create_async_engine(SNOWFLAKE_URL, echo=True, future=True)
-async_session_maker = async_sessionmaker(
-    bind=engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-    autoflush=False,
-)
+# Create a synchronous engine
+engine = create_engine(SNOWFLAKE_URL, echo=True, future=True)
+Session = sessionmaker(bind=engine)
 
 
-async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
-    async with async_session_maker() as session:
+def get_session() -> Generator[Session, None, None]:
+    with Session() as session:
         yield session

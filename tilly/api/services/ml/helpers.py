@@ -4,14 +4,13 @@ from pandas import DataFrame
 def estimate_usage(
     data: DataFrame, usage_coeff=2.1, usage_min=0.1, usage_max=0.2
 ) -> float:
-    used_slots = (data["SKEMALAGT"] | data["BOOKET"].fillna(False)).sum()
+    used_slots = (data["Skemalagt"] | data["Booket"].fillna(False)).sum()
     used_slots = max(used_slots, usage_min)
     return min(usage_coeff * used_slots / len(data), usage_max)
 
 
 def featurize(timeslots: DataFrame) -> DataFrame:
     """Feature engineering"""
-
     return (
         timeslots.pipe(drop_inactive_ranges, range_length=5)
         .pipe(acceleration_features)
@@ -35,8 +34,8 @@ def drop_inactive_ranges(df, range_length=5):
 
 
 def add_date_range_group(df):
-    time_diff = df["DATETIME"].diff().dt.total_seconds() / 60
-    df["DATE_RANGE_GROUP"] = time_diff.ne(15).cumsum()
+    TIMEdiff = df["DATETIME"].diff().dt.total_seconds() / 60
+    df["DATE_RANGE_GROUP"] = TIMEdiff.ne(15).cumsum()
     return df
 
 
@@ -60,16 +59,16 @@ def acceleration_features(df):
 def preprocess_for_modelling(df):
     return df.assign(
         # AKTIVITET=lambda d: pd.factorize(d["TIDSPUNKT_TYPE"])[0],
-        # DOW=lambda d: d["DATETIME"].dt.dayofweek,
-        # HOUR=lambda d: d["DATETIME"].dt.hour,
-        # DAY_TYPE=lambda d: pd.factorize(d["TYPE"])[0],
-        BOOKET=lambda d: d["BOOKET"].fillna(0.0),
+        # DOW=lambda d: d["DATETIME].dt.dayofweek,
+        # HOUR=lambda d: d["DATETIME].dt.hour,
+        # DAY_TYPE=lambda d: pd.factorize(d["Type"])[0],
+        Booket=lambda d: d["Booket"].fillna(0.0),
     ).drop(
         columns=[
             "TIDSPUNKT_TYPE",
             "TYPE",
             "DATE_RANGE_GROUP",
-            "DAYNAME",
+            "Dayname",
             "NAVN",
         ]
     )

@@ -4,8 +4,8 @@ from threading import Lock
 from typing import Dict, List, Tuple
 from pandas import DataFrame
 
-from api.services.ml.helpers import featurize, estimate_usage
-from api.config import MODEL_PARAMS, FEATURES
+from tilly.api.services.ml.helpers import featurize, estimate_usage
+from tilly.api.config import MODEL_PARAMS, FEATURES
 
 ####################
 # Keeps track of the current model
@@ -57,10 +57,10 @@ class ModelRegistry:
         Args:
             timeslots: A list of Timeslot instances.
         """
+        _preprocessed: dict[str, DataFrame] = self.preprocess(timeslots)
         try:
             logger.info("Training model...")
 
-            _preprocessed: dict[str, DataFrame] = self.preprocess(timeslots)
             room_results: dict[str, DataFrame] = self.fit_predict(_preprocessed)
 
             logger.info("Model trained.")

@@ -26,11 +26,11 @@ if __name__ == "__main__":
 
     (
         DataLoader.load(
-            steps={"merge_dt": dict(date="DATE", time="TIME", name="DATETIME")},
+            steps={"merge_dt": dict(date="Date", time="Time", name="DATETIME")},
             print_nans=False,
         )
         .merge(results["data"], on=["DATETIME", "ID", "KOMMUNE"], how="left")[
-            ["DATE", "TIME", "DATETIME", "ID", "KOMMUNE", "in_use", "usage_score"]
+            ["Date", "TIME", "DATETIME", "ID", "KOMMUNE", "in_use", "usage_score"]
         ]
         .to_csv(f"results/{results['run_id']}/results.csv", index=False)
     )

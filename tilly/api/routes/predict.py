@@ -1,10 +1,10 @@
 from fastapi import Depends, APIRouter, BackgroundTasks, Request
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from pandas import DataFrame
 
-from api.database.data import crud
-from api.database.data.db import get_async_session
-from api.services.ml.model import ModelRegistry, get_current_model
+from tilly.api.database.data import crud
+from tilly.api.database.data.db import get_session
+from tilly.api.services.ml.model import ModelRegistry, get_current_model
 
 
 router = APIRouter()
@@ -25,7 +25,7 @@ def prediction_flow(session, model: ModelRegistry):
 def predict(
     request: Request,
     background_tasks: BackgroundTasks,
-    session: AsyncSession = Depends(get_async_session),
+    session: Session = Depends(get_session),
     model: ModelRegistry = Depends(get_current_model),
 ):
     if model:

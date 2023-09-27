@@ -9,15 +9,15 @@ from fastapi_users.authentication import (
     JWTStrategy,
 )
 from fastapi_users.db import SQLAlchemyUserDatabase
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
-from api.config import SECRET
-from api.database.db import get_async_session
-from api.database.models import User
+from tilly.api.config import SECRET
+from tilly.api.database.users.crud import get_async_session
+from tilly.api.database.users.models import User
 
 
 # to work with user table
-async def get_user_db(session: AsyncSession = Depends(get_async_session)):
+async def get_user_db(session: Session = Depends(get_async_session)):
     yield SQLAlchemyUserDatabase(session, User)
 
 
@@ -26,7 +26,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     reset_password_token_secret = SECRET
     verification_token_secret = SECRET
 
-    async def on_after_register(self, user: User, request: Optional[Request] = None):
+    def on_after_register(self, user: User, request: Optional[Request] = None):
         print(f"User {user.id} has registered.")
 
 

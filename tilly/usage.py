@@ -1,8 +1,8 @@
-def estimate_usage(data, kommune, usage_coeff=2.1, usage_limit=0.2):
-    df = data[lambda d: d["KOMMUNE"] == kommune]
+def estimate_usage(data, KOMMUNE, usage_coeff=2.1, usage_limit=0.2):
+    df = data[lambda d: d["KOMMUNE"] == KOMMUNE]
     est_usage = min(
         usage_coeff
-        * (df["SKEMALAGT"].astype(bool) | df["BOOKET"].fillna(0).astype(bool)).sum()
+        * (df["Skemalagt"].astype(bool) | df["Booket"].fillna(0).astype(bool)).sum()
         / df.shape[0],
         usage_limit,
     )

@@ -1,13 +1,14 @@
 from fastapi_users.db import SQLAlchemyBaseUserTableUUID
-from sqlalchemy.ext.declarative import declarative_base
-
+from sqlalchemy.orm import declarative_base
 
 DeclarativeBase = declarative_base()
 
 
-class UserBase(DeclarativeBase):
+class Base(DeclarativeBase):
+    __abstract__ = True
     pass
 
 
-class User(SQLAlchemyBaseUserTableUUID, UserBase):
+class User(SQLAlchemyBaseUserTableUUID, Base):
+    __tablename__ = "users"
     pass

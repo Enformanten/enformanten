@@ -16,7 +16,7 @@ services:
     env_file:
      - .env
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/dev
+      DATABASE_URL: postgresql+pg://postgres:postgres@db:5432/dev
       PREDICTION_ENDPOINT: http://localhost:8001
     ports:
       - 8000:8000

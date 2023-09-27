@@ -26,6 +26,9 @@ class TrainingTimeslots(DeclarativeBase):
     iaq = Column("IAQ", Float, nullable=True)
     booked = Column("BOOKET", Boolean, nullable=True)
 
+    def as_dict(self):
+        return {c.key: getattr(self, c.key) for c in self.__table__.columns}
+
 
 class UnscoredTimeslots(DeclarativeBase):
     __tablename__ = UNSCORED_TABLE_NAME
@@ -47,6 +50,9 @@ class UnscoredTimeslots(DeclarativeBase):
     iaq = Column("IAQ", Float, nullable=True)
     booked = Column("BOOKET", Boolean, nullable=True)
 
+    def as_dict(self):
+        return {c.key: getattr(self, c.key) for c in self.__table__.columns}
+
 
 class ScoredTimeslots(DeclarativeBase):
     __tablename__ = SCORED_TABLE_NAME
@@ -59,3 +65,6 @@ class ScoredTimeslots(DeclarativeBase):
     time = Column("TIME", Time, nullable=False)
     score = Column("ANOMALY_SCORE", Float, nullable=True)
     IN_USE = Column("IN_USE", Boolean, nullable=True)
+
+    def as_dict(self):
+        return {c.key: getattr(self, c.key) for c in self.__table__.columns}

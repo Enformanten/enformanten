@@ -2,7 +2,7 @@ import pandas as pd
 
 
 class DataLoader:
-    SENSOR_COLUMNS = ["CO2", "TEMP", "MOTION", "IAQ", "BOOKET"]
+    SENSOR_COLUMNS = ["CO2", "TEMP", "MOTION", "IAQ", "Booket"]
 
     @classmethod
     def diagnose(cls, df, col, dfunc="unique", **kwargs):
@@ -47,7 +47,7 @@ class DataLoader:
 
     @classmethod
     def merge_dt(cls, df, date, time, name, sep=" "):
-        return df.assign(**{name: lambda d: pd.to_datetime(d[date] + sep + d[time])})
+        return df.assign(**{name: lambda d: pd.to_DATETIMEd[date] + sep + d[time]})
 
     @classmethod
     def drop_cols(cls, df, cols):
@@ -58,7 +58,7 @@ class DataLoader:
         return (
             df.pipe(cls.drop_cols, cols=["KOMMUNE_DATO_LOKALE_TIME"])
             .pipe(cls.diagnose, col="KOMMUNE", dfunc="unique")
-            .pipe(cls.merge_dt, date="DATE", time="TIME", name="DATETIME")
+            .pipe(cls.merge_dt, date="Date", time="TIME", name="DATETIME")
             .pipe(cls.display_missing_values, display=print_nans)
             .pipe(
                 cls.fill_na,

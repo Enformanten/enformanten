@@ -36,11 +36,11 @@ jobs:
       run: echo "SHORT_SHA=`echo ${{ github.sha }} | cut -c1-8`" >> $GITHUB_ENV
 
     - name: Get the last commit date
-      run: echo "COMMIT_DATE=`git log -1 --format=%cd --date=format:'%b %d, %H:%M' HEAD`" >> $GITHUB_ENV
+      run: echo "COMMIT_Date=`git log -1 --format=%cd --date=format:'%b %d, %H:%M' HEAD`" >> $GITHUB_ENV
 
     - name: Get the last commit date
       id: git_metadata
-      run: echo "git_metadata=${{ env.SHORT_SHA }}-${{ github.event.pusher.name  }}-${{ env.COMMIT_DATE }}" >> "$GITHUB_OUTPUT"
+      run: echo "git_metadata=${{ env.SHORT_SHA }}-${{ github.event.pusher.name  }}-${{ env.COMMIT_Date }}" >> "$GITHUB_OUTPUT"
 
   build:
     runs-on: ubuntu-latest
@@ -105,7 +105,7 @@ jobs:
         response_field: 'version'
         response_value: ${{ needs.metadata.outputs.git_metadata }}
         interval: '30'
-        timeout: '900'
+        TIMEut: '900'
 
   deploy:
     runs-on: ubuntu-latest
@@ -142,7 +142,7 @@ jobs:
         response_field: 'version'
         response_value: ${{ needs.metadata.outputs.git_metadata }}
         interval: '30'
-        timeout: '900'
+        TIMEut: '900'
 
   test:
     runs-on: ubuntu-latest

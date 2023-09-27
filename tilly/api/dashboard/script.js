@@ -5,7 +5,7 @@ const iframeContainer = document.getElementById('iframe-container');
 function loadIframes() {
     iframeContainer.innerHTML = '';
     const iframe = document.createElement('iframe');
-    iframe.src = `./templates/${schoolList[currentSchoolIndex]}`;
+    iframe.src = `./TEMPlates/${schoolList[currentSchoolIndex]}`;
     iframeContainer.appendChild(iframe);
 }
 

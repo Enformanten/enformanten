@@ -1,6 +1,6 @@
 import pytest
 
-from api.services.schemas import Timeslots
+from tilly.api.services.schemas import Timeslots
 
 
 def test_timeslots(mock_timeslots):
