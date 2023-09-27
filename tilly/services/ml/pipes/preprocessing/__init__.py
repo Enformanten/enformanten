@@ -16,6 +16,18 @@ def merge_dt(df, date, time, name, sep=" "):
     )
 
 
+def drop_outliers(df, cols):
+    mask = np.ones(len(df), dtype=bool)
+
+    if "CO2" in cols:
+        mask &= (df["CO2"].values >= 100) & (df["CO2"].values <= 8000)
+
+    if "TEMP" in cols:
+        mask &= (df["TEMP"].values >= 1) & (df["TEMP"].values <= 50)
+
+    return df.loc[mask]
+
+
 def fill_na(df, cols, values, types):
     return df.assign(
         **{

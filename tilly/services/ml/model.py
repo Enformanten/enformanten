@@ -3,12 +3,15 @@ from sklearn.ensemble import IsolationForest
 from threading import Lock
 from typing import Dict
 from pandas import DataFrame
+from tqdm import tqdm
 
 import tilly.services.ml.helpers as h
 from tilly.config import MODEL_PARAMS, FEATURES
 
+
 ####################
-# Keeps track of the current model
+# Allows us to access and
+# update the global model
 ####################
 
 current_model = None
@@ -57,13 +60,18 @@ class ModelRegistry:
         Args:
             timeslots: A list of Timeslot instances.
         """
-        _preprocessed: dict[str, DataFrame] = self.preprocess(timeslots)
         try:
-            logger.info("Training model...")
+            logger.info("Preprocessing data...")
+            _preprocessed: dict[str, DataFrame] = self.preprocess(timeslots)
+            logger.info("Data preprocessed.")
 
+            logger.info("Training models...")
             room_results: dict[str, DataFrame] = self.fit_predict(_preprocessed)
+            logger.info("Model traineds.")
 
-            logger.info("Model trained.")
+            logger.info("Postprocessing data...")
+            room_results: dict[str, DataFrame] = self.postprocess(room_results)
+            logger.info("Data postprocessed.")
 
         except Exception as e:
             logger.error(f"An error occurred while training: {e}")
@@ -74,10 +82,13 @@ class ModelRegistry:
         output = {}
         # try:
         for name, timeslots in rooms.items():
-            logger.info(f"Fitting model for room: {name}")
+            logger.debug(f"Fitting model for room: {name}")
 
             # estimate usage coefficient
             usage_coeff = h.estimate_usage(timeslots)
+            logger.debug(
+                f"Fitting model for room: {name}\n - usage coefficient: {usage_coeff}"
+            )
 
             # fit model
             features = timeslots[FEATURES]
@@ -86,23 +97,14 @@ class ModelRegistry:
 
             # save model to registry
             self.models[name] = model_IF
-
-            # extract scores and predictions
-            scores = model_IF.decision_function(features)
-            preds = model_IF.predict(features)
-
-            # add scores and predictions to output
-            output[name] = timeslots.assign(
-                anomaly_score=1 - h.format_scores(scores),
-                IN_USE=h.format_predictions(preds),
-            )
+            output[name]: DataFrame = self._predict(name, timeslots)
 
         # except Exception as e:
         #     logger.error(f"An error occurred in fit_predict: {e}")
 
         return output
 
-    def predict(self, timeslots: dict[str, DataFrame]) -> dict[str, DataFrame]:
+    def predict(self, rooms: dict[str, DataFrame]) -> dict[str, DataFrame]:
         """
         Makes a prediction on a single input instance.
 
@@ -113,17 +115,42 @@ class ModelRegistry:
             A dictionary mapping class indices to predicted
             probabilities.
         """
-        _preprocessed: dict[str, DataFrame] = self.preprocess(timeslots)
-        _predictions: dict[str, DataFrame] = self._predict(_preprocessed)
+        _preprocessed: dict[str, DataFrame] = self.preprocess(rooms)
+
+        _predictions = {
+            name: self._predict(name, room)
+            for name, room in tqdm(_preprocessed.items())
+        }
         return self.postprocess(_predictions)
 
     def preprocess(self, timeslots: dict[str, DataFrame]) -> dict[str, DataFrame]:
         """Featurize the input data."""
-        return {name: room.pipe(h.featurize) for name, room in timeslots.items()}
+        return {name: room.pipe(h.featurize) for name, room in tqdm(timeslots.items())}
 
-    def _predict(self, timeslots: list[list]) -> list[tuple[int, float]]:
-        return timeslots
+    def _predict(self, name: str, room: DataFrame) -> DataFrame:
+        """Make predictions on the input data."""
+
+        # extract features
+        features = room[FEATURES]
+
+        # load model from registry
+        model: IsolationForest = self.models.get(name)
+
+        # extract scores and predictions
+        _scores: list[float] = model.decision_function(features)
+        _preds: list[int] = model.predict(features)
+
+        # format scores and predictions
+        scores = 1 - h.format_scores(_scores)
+        preds = h.format_predictions(_preds)
+
+        return room.assign(
+            ANOMALY_SCORE=scores,
+            IN_USE=preds,
+        )
 
     def postprocess(self, predictions: dict[str, DataFrame]) -> dict[str, DataFrame]:
         """Postprocess the predictions."""
-        return {name: room.pipe(h.heuristics) for name, room in predictions.items()}
+        return {
+            name: room.pipe(h.heuristics) for name, room in tqdm(predictions.items())
+        }

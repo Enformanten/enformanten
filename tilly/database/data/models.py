@@ -34,7 +34,7 @@ class UnscoredTimeslots(DeclarativeBase):
     __tablename__ = UNSCORED_TABLE_NAME
 
     id = Column(Integer, primary_key=True)
-    room_id = Column("ID", Integer, nullable=False)
+    room_id = Column("ID", String, nullable=False)
     municipality = Column("KOMMUNE", String, nullable=False)
     school = Column("SKOLE", String, nullable=False)
     date = Column("DATE", String, nullable=False)
@@ -58,12 +58,12 @@ class ScoredTimeslots(DeclarativeBase):
     __tablename__ = SCORED_TABLE_NAME
 
     id = Column(Integer, primary_key=True)
-    room_id = Column("ID", Integer, nullable=False)
-    municipality = Column("KOMMUNE", String, nullable=False)
-    school = Column("SKOLE", String, nullable=False)
-    date = Column("DATE", Date, nullable=False)
-    time = Column("TIME", Time, nullable=False)
-    score = Column("ANOMALY_SCORE", Float, nullable=True)
+    ID = Column("ID", String, nullable=False)
+    KOMMUNE = Column("KOMMUNE", String, nullable=False)
+    # school = Column("SKOLE", String, nullable=False)
+    DATE = Column("DATE", Date, nullable=False)
+    TIME = Column("TIME", Time, nullable=False)
+    ANOMALY_SCORE = Column("ANOMALY_SCORE", Float, nullable=True)
     IN_USE = Column("IN_USE", Boolean, nullable=True)
 
     def as_dict(self):

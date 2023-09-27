@@ -14,7 +14,7 @@ from tilly.users.initial_users import create_initial_users
 from tilly.users.schemas import UserCreate, UserRead, UserUpdate
 
 
-TEMPlates = Jinja2Templates(directory="dashboard")
+templates = Jinja2Templates(directory="dashboard")
 
 
 app = FastAPI(
@@ -35,8 +35,8 @@ async def on_startup():
 
 @app.get("/", response_class=HTMLResponse)
 def read_root():
-    plots: list[Type[PlotlyFigure]] = dashboard.load_files(c.PLOT_DIR)
-    return TEMPlates.TEMPlateResponse("dashboard/index.html", {plots: plots})
+    plots: list[Type[PlotlyFigure]] = dashboard.load_files(c.PLOTS_DIR)
+    return templates.TemplateResponse("dashboard/index.html", {plots: plots})
 
 
 app.include_router(
@@ -75,4 +75,4 @@ app.include_router(
 
 
 if __name__ == "__main__":
-    uvicorn.run("api.main:app", host="0.0.0.0", log_level="info", reload=True)
+    uvicorn.run("tilly.main:app", host="0.0.0.0", log_level="info", reload=True)

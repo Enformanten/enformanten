@@ -17,6 +17,7 @@ def featurize(timeslots: DataFrame) -> DataFrame:
     return (
         timeslots.pipe(prep.merge_dt, date="DATE", time="TIME", name="DATETIME")
         .pipe(prep.cast, map={"BOOKET": bool, "SKEMALAGT": bool})
+        .pipe(prep.drop_outliers, cols=["CO2", "TEMP"])
         .pipe(
             prep.fill_na,
             cols=["CO2", "TEMP", "MOTION", "IAQ"],
@@ -49,11 +50,11 @@ def heuristics(timeslots: DataFrame) -> DataFrame:
         .assign(
             # If the prior rules change the IN_USE value, then
             # update the usage score to reflect this change
-            anomaly_score=lambda d: np.where(
-                (d["IN_USE"].eq(1) & d["anomaly_score"].lt(0.5))
-                | (d["IN_USE"].eq(0) & d["anomaly_score"].gt(0.5)),
-                1 - d["anomaly_score"],
-                d["anomaly_score"],
+            ANOMALY_SCORE=lambda d: np.where(
+                (d["IN_USE"].eq(1) & d["ANOMALY_SCORE"].lt(0.5))
+                | (d["IN_USE"].eq(0) & d["ANOMALY_SCORE"].gt(0.5)),
+                1 - d["ANOMALY_SCORE"],
+                d["ANOMALY_SCORE"],
             )
         )
     )

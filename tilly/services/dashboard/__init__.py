@@ -2,11 +2,12 @@ from pathlib import Path
 import pandas as pd
 import warnings
 
-from loguru import logger
+# from loguru import logger
 
-# set pandas plotting backend to plotly
+from tilly.config import PLOTS_DIR
+
+
 pd.options.plotting.backend = "plotly"
-
 
 warnings.filterwarnings(
     "ignore", category=FutureWarning, module="_plotly_utils.basevalidators"
@@ -24,24 +25,24 @@ def load_files(path: str) -> list[object]:
 
 
 def create_dir(municipality: str, school: str) -> None:
-    Path(f"tilly/dashboard/plots/{municipality}/{school}").mkdir(
-        parents=True, exist_ok=True
-    )
+    """Creates the municipality/school directores if
+    they doesn't exist."""
+    Path(f"{PLOTS_DIR}/{municipality}/{school}").mkdir(parents=True, exist_ok=True)
 
 
 def process_for_dashboard(rooms: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
     """Processes the results for the dashboard."""
 
     output = {}
-    for _, room in rooms.items():
-        logger.info("Creating plot for room: {name}")
+    for name, room in rooms.items():
+        # logger.debug(f"Creating plot for room: {name}")
 
         # retrive the first instance of 'KOMMUNE' and 'SKOLE'
-        KOMMUNE = room["KOMMUNE"].iloc[0]
+        municipality = room["KOMMUNE"].iloc[0]
         school = room["SKOLE"].iloc[0]
         room_id = room["ID"].iloc[0].replace(".", "_")
 
-        create_dir(KOMMUNE, school)
+        create_dir(municipality, school)
 
         fig = room.sort_values("DATETIME", ascending=True).plot.bar(
             x="DATETIME",
@@ -49,13 +50,13 @@ def process_for_dashboard(rooms: dict[str, pd.DataFrame]) -> dict[str, pd.DataFr
             color="IN_USE",
             title=(
                 f"Anvendelsesmodel - Lokale '{room_id}' "
-                + f"- {school} ({KOMMUNE} KOMMUNE)"
+                + f"- {school} ({municipality} KOMMUNE)"
             ),
             width=3000,
             hover_data=room[["CO2_ACC"]],
         )
         fig.update_traces(dict(marker_line_width=0))
-        output[(KOMMUNE, school, room_id)] = fig
+        output[(municipality, school, room_id)] = fig
 
     return output
 
@@ -63,8 +64,8 @@ def process_for_dashboard(rooms: dict[str, pd.DataFrame]) -> dict[str, pd.DataFr
 def save_figures(named_plots) -> None:
     """Save the images to disk."""
 
-    for (KOMMUNE, school, room_id), fig in named_plots.items():
-        fig.write_html(f"api/dashboard/{KOMMUNE}/{school}/{room_id}.html")
+    for (municipality, school, room_id), fig in named_plots.items():
+        fig.write_html(f"{PLOTS_DIR}/{municipality}/{school}/{room_id}.html")
 
 
 def update_dashboard(plot_data: list[str, pd.DataFrame]) -> None:

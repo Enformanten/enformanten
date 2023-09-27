@@ -19,7 +19,7 @@ USER_DATABASE_URL = config("DATABASE_URL")
 TITLE = "Tilly API"
 DEBUG = True
 DESCRIPTION = "Unsupervised anomaly detection for room usage"
-PLOT_DIR = "dashboard/plots"
+PLOTS_DIR = "tilly/dashboard/plots"
 
 
 ################
@@ -46,13 +46,13 @@ OUTPUT_COLUMNS = [
     "ID",
     "KOMMUNE",
     "IN_USAGE",
-    "anomaly_score",
+    "ANOMALY_SCORE",
 ]
 
 
 ################
 # MODEL
 ################
-MODEL_PARAMS = {"n_estimators": 100, "random_state": 42}
+MODEL_PARAMS = {"n_estimators": 300, "random_state": 42}
 
-FEATURES = ["CO2_ACC"]
+FEATURES = ["CO2_ACC", "CO2"]

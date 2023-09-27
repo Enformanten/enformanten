@@ -1,16 +1,22 @@
 from loguru import logger
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 import pandas as pd
+from snowflake.connector.pandas_tools import write_pandas
 
-import tilly.database.data.models as m
+
+from tilly.config import SCORED_TABLE_NAME
+from tilly.database.data.db import connect, SNOWFLAKE_CREDENTIALS, SnowflakeConnection
 
 
-def retrieve_training_data(session: Session) -> dict[str, pd.DataFrame]:
+def get_snowflake_conn() -> SnowflakeConnection:
+    return connect(**SNOWFLAKE_CREDENTIALS)
+
+
+def retrieve_data(session: Session, table: object) -> dict[str, pd.DataFrame]:
     """retrieve all timeslots using sqlalchemy"""
-    logger.debug("Getting all data from Timeslots table..")
+    logger.debug(f"Retrieving data from {table} ..")
 
-    query = session.query(m.TrainingTimeslots).statement
+    query = session.query(table).statement
 
     dataf = pd.read_sql(query, session.bind).assign(
         SKOLE_ID=lambda d: d.SKOLE + "_" + d.ID
@@ -18,34 +24,26 @@ def retrieve_training_data(session: Session) -> dict[str, pd.DataFrame]:
     return {school_room: df for school_room, df in dataf.groupby("SKOLE_ID")}
 
 
-def retrieve_unscored_timeslots(session: Session) -> dict[str, pd.DataFrame]:
-    """retrieve all unscored timeslots using sqlalchemy"""
-    logger.debug("Getting all data from 'unscored' table..")
-
-    result = session.execute(select(m.UnscoredTimeslots))
-    timeslots: list[dict] = [*map(dict, result.fetchall())]
-    grouped = (
-        pd.DataFrame.from_records(timeslots)
-        .assign(SKOLE_ID=lambda d: d.SKOLE + "_" + d.ID)
-        .groupby("SKOLE_ID")
-    )
-    return {school_room: df for school_room, df in grouped}
-
-
-def send_scored_timeslots(
-    session: Session, scored_data: dict[str, pd.DataFrame]
+def push_data(
+    rooms: dict[str, pd.DataFrame], table: object | str = SCORED_TABLE_NAME
 ) -> None:
-    logger.debug("Sending scored data back to database..")
+    logger.debug(f"Sending data to {table} ..")
 
-    combined_df = pd.concat(scored_data.values(), ignore_index=True)
-    scored_timeslots_list = combined_df.to_dict(orient="records")
+    output_cols = ["ID", "KOMMUNE", "DATE", "TIME", "ANOMALY_SCORE", "IN_USE"]
+    rooms_df = pd.concat(rooms.values(), ignore_index=True)[output_cols]
 
-    session.add_all(
-        [
-            m.ScoredTimeslots(**scored_timeslot)
-            for scored_timeslot in scored_timeslots_list
-        ]
-    )
+    conn = get_snowflake_conn()
+    response, *_ = write_pandas(conn=conn, df=rooms_df, table_name=table)
+    conn.close()
+
+    return response  # status
+
+    # session.add_all(
+    #     [
+    #         table(**room)
+    #         for room in rooms_df.to_dict(orient="records")
+    #     ]
+    # )
 
     # Commit the session to insert the records
-    session.commit()
+    # session.commit()
