@@ -1,0 +1,4 @@
+**/__pycache__
+**/*.pyc
+tilly/dashboards/plots/*
+dashboards/plots/*
