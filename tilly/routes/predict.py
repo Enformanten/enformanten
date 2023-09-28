@@ -7,6 +7,7 @@ from tilly.database.data import crud
 from tilly.database.data.models import UnscoredTimeslots
 from tilly.database.data.db import get_session
 from tilly.services.ml.model import ModelRegistry, get_current_model
+from tilly.services.ml.helpers import combine_frames
 
 
 router = APIRouter()
@@ -22,7 +23,8 @@ def predict(
     if model:
         rooms: dict[str, DataFrame] = crud.retrieve_data(session, UnscoredTimeslots)
         scored_rooms: dict[str, DataFrame] = model.predict(rooms)
-        status: bool = crud.push_data(scored_rooms)
+        combined_rooms: DataFrame = combine_frames(rooms, scored_rooms)
+        status: bool = crud.push_data(combined_rooms)
 
         msg = {"message": f"Scoring sequence completed - Status: {status}"}
 

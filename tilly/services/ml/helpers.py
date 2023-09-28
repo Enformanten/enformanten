@@ -1,19 +1,25 @@
-from pandas import DataFrame
+import pandas as pd
 import numpy as np
 
 import tilly.services.ml.pipes.preprocessing as prep
 
 
 def estimate_usage(
-    data: DataFrame, usage_coeff=2.1, usage_min=0.1, usage_max=0.2
+    data: pd.DataFrame, usage_coeff=2.1, usage_min=0.1, usage_max=0.4
 ) -> float:
-    used_slots = (data["SKEMALAGT"] | data["BOOKET"].fillna(False)).sum()
-    used_slots = max(used_slots, usage_min)
-    return min(usage_coeff * used_slots / len(data), usage_max)
+    try:
+        used_slots = (data["SKEMALAGT"] | data["BOOKET"].fillna(False)).sum()
+        used_slots = max(used_slots, usage_min)
+        return min(usage_coeff * used_slots / len(data), usage_max)
+    except ZeroDivisionError:
+        return "auto"
 
 
-def featurize(timeslots: DataFrame) -> DataFrame:
+def featurize(timeslots: pd.DataFrame) -> pd.DataFrame:
     """Feature engineering"""
+
+    timeslots.columns = timeslots.columns.astype(str)
+
     return (
         timeslots.pipe(prep.merge_dt, date="DATE", time="TIME", name="DATETIME")
         .pipe(prep.cast, map={"BOOKET": bool, "SKEMALAGT": bool})
@@ -30,7 +36,7 @@ def featurize(timeslots: DataFrame) -> DataFrame:
     )
 
 
-def heuristics(timeslots: DataFrame) -> DataFrame:
+def heuristics(timeslots: pd.DataFrame) -> pd.DataFrame:
     """Add heuristic rules to predicted data"""
     return (
         timeslots.assign(
@@ -72,3 +78,63 @@ def format_scores(scores: list) -> list:
         scores (list): List of scores
     """
     return np.interp(scores, (min(scores), max(scores)), (0, 1))
+
+
+def combine_frames(
+    original: dict[str, pd.DataFrame],
+    scored: dict[str, pd.DataFrame],
+    merge_cols: list = ["DATE", "TIME", "ID", "KOMMUNE", "SKOLE"],
+) -> pd.DataFrame:
+    """
+    Combines original and scored data into a single pd.DataFrame.
+
+    The function takes two dictionaries, where the keys represent
+    room identifiers and the values are Pandas DataFrames containing
+    the original and scored data. It enriches the original data with
+    the anomaly scores and 'IN_USE' indicators from the scored data.
+    If a room does not have corresponding scored data, it will be
+    filled with null values in the 'IN_USE' and 'ANOMALY_SCORE' columns.
+
+    Parameters:
+    - original (dict[str, pd.DataFrame]): A dictionary containing the
+    original data.
+      The keys are room identifiers, and the values are pd.DataFrames
+    with the original data.
+    - scored (dict[str, pd.DataFrame]): A dictionary containing the
+    scored data.
+      The keys are room identifiers, and the values are pd.DataFrames
+    with the anomaly scores and 'IN_USE' indicators.
+    - merge_cols (list): The list of column names to use for merging the
+    original and scored data.
+
+    Returns:
+    - pd.DataFrame: A concatenated DataFrame containing all the enriched
+    data.
+
+    """
+    combined_frames = []
+    for key, orig_df in original.items():
+        scored_df = scored.get(key, None)
+        if scored_df is not None:
+            # Merge based on multiple common columns
+            combined_df = orig_df.merge(
+                scored_df[["ANOMALY_SCORE", "IN_USE"] + merge_cols],
+                how="left",
+                on=merge_cols,
+            )
+        else:
+            # If there's no corresponding scored pd.dataframe,
+            # copy the original pd.dataframe and add null columns
+            # for 'IN_USE' and 'ANOMALY_SCORE'
+            combined_df = orig_df.copy()
+            combined_df["ANOMALY_SCORE"] = None
+            combined_df["IN_USE"] = None
+
+        # Add an identifier for the original key (i.e., room name)
+        combined_df["ROOM"] = key
+
+        combined_frames.append(combined_df)
+
+    # Concatenate all frames vertically
+    final_combined = pd.concat(combined_frames, ignore_index=True)
+    return final_combined

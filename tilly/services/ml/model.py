@@ -3,6 +3,7 @@ from sklearn.ensemble import IsolationForest
 from threading import Lock
 from typing import Dict
 from pandas import DataFrame
+import numpy as np
 from tqdm import tqdm
 
 import tilly.services.ml.helpers as h
@@ -60,47 +61,52 @@ class ModelRegistry:
         Args:
             timeslots: A list of Timeslot instances.
         """
-        try:
-            logger.info("Preprocessing data...")
-            _preprocessed: dict[str, DataFrame] = self.preprocess(timeslots)
-            logger.info("Data preprocessed.")
+        logger.info("Preprocessing data...")
+        _preprocessed: dict[str, DataFrame] = self.preprocess(timeslots)
+        logger.info("Data preprocessed.")
 
+        try:
             logger.info("Training models...")
             room_results: dict[str, DataFrame] = self.fit_predict(_preprocessed)
-            logger.info("Model traineds.")
+            logger.info("Models trained.")
 
-            logger.info("Postprocessing data...")
-            room_results: dict[str, DataFrame] = self.postprocess(room_results)
-            logger.info("Data postprocessed.")
-
-        except Exception as e:
+        except TypeError as e:
             logger.error(f"An error occurred while training: {e}")
 
-        return room_results
+        logger.info("Postprocessing data...")
+        _postprocessed: dict[str, DataFrame] = self.postprocess(room_results)
+        logger.info("Data postprocessed.")
+
+        return _postprocessed
 
     def fit_predict(self, rooms: dict[str, DataFrame]) -> Dict[str, DataFrame]:
         output = {}
         # try:
         for name, timeslots in rooms.items():
-            logger.debug(f"Fitting model for room: {name}")
+            if not timeslots.empty:
+                try:
+                    logger.debug(f"Fitting model for room: {name}")
 
-            # estimate usage coefficient
-            usage_coeff = h.estimate_usage(timeslots)
-            logger.debug(
-                f"Fitting model for room: {name}\n - usage coefficient: {usage_coeff}"
-            )
+                    # estimate usage coefficient
+                    usage_coeff = "auto"  # h.estimate_usage(timeslots)
+                    logger.debug(
+                        f"Fitting model for room: {name}\n - "
+                        + f"usage coefficient: {usage_coeff}"
+                    )
 
-            # fit model
-            features = timeslots[FEATURES]
-            model_IF = IsolationForest(contamination=usage_coeff, **MODEL_PARAMS)
-            model_IF.fit(features)
+                    # fit model
+                    features = timeslots[FEATURES]
+                    model_IF = IsolationForest(
+                        contamination=usage_coeff, **MODEL_PARAMS
+                    )
+                    model_IF.fit(features)
 
-            # save model to registry
-            self.models[name] = model_IF
-            output[name]: DataFrame = self._predict(name, timeslots)
+                    # save model to registry
+                    self.models[name] = model_IF
+                    output[name]: DataFrame = self._predict(name, timeslots)
 
-        # except Exception as e:
-        #     logger.error(f"An error occurred in fit_predict: {e}")
+                except Exception as e:
+                    logger.error(f"An error occurred in fit_predict: {e}")
 
         return output
 
@@ -134,15 +140,27 @@ class ModelRegistry:
         features = room[FEATURES]
 
         # load model from registry
-        model: IsolationForest = self.models.get(name)
+        if model := self.models.get(name):
+            # extract scores and predictions
+            _scores: list[float] = model.decision_function(features)
+            _preds: list[int] = model.predict(features)
 
-        # extract scores and predictions
-        _scores: list[float] = model.decision_function(features)
-        _preds: list[int] = model.predict(features)
+            # format scores and predictions
+            scores = 1 - h.format_scores(_scores)
+            preds = h.format_predictions(_preds)
 
-        # format scores and predictions
-        scores = 1 - h.format_scores(_scores)
-        preds = h.format_predictions(_preds)
+        else:
+            school = name.split("_")[0]
+            logger.warning(
+                f"Model for {name} ({school}) not found. Returning null values."
+            )
+
+            school_models = [key for key in self.models.keys() if school in key]
+            logger.warning(f"Models in registry for {school}: {school_models}")
+
+            size = room.shape[0]
+            scores = [np.nan] * size
+            preds = [np.nan] * size
 
         return room.assign(
             ANOMALY_SCORE=scores,
