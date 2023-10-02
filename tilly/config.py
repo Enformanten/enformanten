@@ -1,5 +1,6 @@
 from ast import literal_eval
 from decouple import config
+from pathlib import Path
 
 
 GIT_METADATA = config("GIT_METADATA", default="local")
@@ -19,7 +20,7 @@ USER_DATABASE_URL = config("DATABASE_URL")
 TITLE = "Tilly API"
 DEBUG = True
 DESCRIPTION = "Unsupervised anomaly detection for room usage"
-PLOTS_DIR = "tilly/dashboard/plots"
+PLOTS_DIR = Path("tilly/dashboard/plots")
 
 
 ################

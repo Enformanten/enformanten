@@ -3,65 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Performance Overview</title>
-    <style>
-        /* Global styles */
-        body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%);
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        /* Header styles */
-        .header {
-            background-color: #007BFF;
-            color: white;
-            padding: 20px;
-            text-align: center;
-            font-size: 24px;
-        }
-
-        /* Container for Iframes */
-        .iframe-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-around;
-            padding: 20px;
-        }
-
-        /* Individual Iframe styles */
-        iframe {
-            border: 3px solid #007BFF;
-            border-radius: 8px;
-            margin: 10px;
-            width: 400px;
-            height: 300px;
-        }
-
-        /* Button Styles */
-        button {
-            background-color: #007BFF;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            text-align: center;
-            font-size: 16px;
-            cursor: pointer;
-            margin: 5px;
-            border-radius: 4px;
-        }
-
-        button:hover {
-            background-color: #0056b3;
-        }
-
-        /* Footer with buttons */
-        .footer {
-            padding: 20px;
-            text-align: center;
-        }
-    </style>
+    <link rel="stylesheet" type="text/css" href="/dashboard/styles.css">
 </head>
 <body>
     <div class="header">
@@ -78,31 +20,37 @@
     </div>
 
     <script>
-        let currentSchoolId = 1;  // Start with the first school
+        var plots = {{ plots | tojson | safe }};
 
-        function updateIframes() {
-            const container = document.querySelector(".iframe-container");
-            container.innerHTML = "";  // Clear current iframes
-            for (let i = 1; i <= 3; i++) {  // Assume 3 rooms per school
-                const iframe = document.createElement("iframe");
-                iframe.src = `/room/${currentSchoolId}/${i}`;
-                container.appendChild(iframe);
+        if(Object.keys(plots).length === 0) {
+            // No models are trained, so display the message
+            var iframeContainer = document.querySelector('.iframe-container');
+            var message = document.createElement('p');
+            message.innerHTML = `No models trained, so no logs to display.
+            For API instructions, please check out the <a href="/docs">docs</a>`;
+            iframeContainer.appendChild(message);
+        } else {
+            // Existing logic to display plots
+            var municipalities = Object.keys(plots);
+            var currentMunicipalityIndex = 0;
+            var currentSchoolIndex = 0;
+
+            function updateIframes() {
+                var iframeContainer = document.querySelector('.iframe-container');
+                iframeContainer.innerHTML = ''; // Clear existing iframes
+
+                var currentMunicipality = municipalities[currentMunicipalityIndex];
+                var currentSchool = Object.keys(plots[currentMunicipality])[currentSchoolIndex];
+                var rooms = plots[currentMunicipality][currentSchool];
+
+                rooms.forEach(function(room) {
+                    var iframe = document.createElement('iframe');
+                    iframe.src = `/plots/${currentMunicipality}/${currentSchool}/${room}`;
+                    iframeContainer.appendChild(iframe);
+                });
             }
-        }
 
-        // Initialize with the first school
-        window.onload = function() {
-            updateIframes();
-        }
-
-        function nextSchool() {
-            currentSchoolId++;
-            updateIframes();
-        }
-
-        function prevSchool() {
-            if (currentSchoolId > 1) {
-                currentSchoolId--;
+            window.onload = function() {
                 updateIframes();
             }
         }

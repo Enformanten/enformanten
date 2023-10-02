@@ -1,20 +1,13 @@
 import uvicorn
 from fastapi import Depends, FastAPI
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
-from plotly.graph_objects import Figure as PlotlyFigure
-from typing import Type
+from fastapi.staticfiles import StaticFiles
 
 import tilly.config as c
 from tilly.database.users.crud import create_db_and_tables
-from tilly.routes import predict, train, room
-from tilly.services import dashboard
+from tilly.routes import predict, train, room, dashboard
 from tilly.users.auth import auth_backend, current_active_user, fastapi_users
 from tilly.users.initial_users import create_initial_users
 from tilly.users.schemas import UserCreate, UserRead, UserUpdate
-
-
-templates = Jinja2Templates(directory="dashboard")
 
 
 app = FastAPI(
@@ -33,11 +26,13 @@ async def on_startup():
     await create_initial_users()
 
 
-@app.get("/", response_class=HTMLResponse)
-def read_root():
-    plots: list[Type[PlotlyFigure]] = dashboard.load_files(c.PLOTS_DIR)
-    return templates.TemplateResponse("dashboard/index.html", {plots: plots})
+app.mount("/dashboard", StaticFiles(directory=c.PLOTS_DIR.parent), name="dashboard")
 
+app.include_router(
+    dashboard.router,
+    tags=["dashboard"],
+    # dependencies=[Depends(current_active_user)],
+)
 
 app.include_router(
     fastapi_users.get_auth_router(auth_backend), prefix="/auth/jwt", tags=["auth"]

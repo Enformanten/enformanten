@@ -14,12 +14,12 @@ warnings.filterwarnings(
 )
 
 
-def load_files(path: str) -> list[object]:
+def load_files(path: str) -> list[str]:
     """Load all files from the given path."""
 
     plots = []
     for file in Path(path).glob("*.html"):
-        plots.append(file.read_text())
+        plots.append(file.read_text())  # append html content
 
     return plots
 
