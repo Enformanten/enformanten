@@ -3,57 +3,180 @@
 <head>
     <meta charset="UTF-8">
     <title>Performance Overview</title>
-    <link rel="stylesheet" type="text/css" href="/dashboard/styles.css">
+    <link rel="stylesheet" type="text/css" href="/static/styles.css">
 </head>
 <body>
     <div class="header">
         Performance Overview
     </div>
-
-    <div class="iframe-container">
-        <!-- Iframes will be inserted here -->
+    <div id="currentInfo" class="currentInfo">
+        Loading...
     </div>
-
-    <div class="footer">
-        <button onclick="prevSchool()">Previous School</button>
-        <button onclick="nextSchool()">Next School</button>
+    <div class="navigation">
+        <button id="prevSchool">Previous School</button>
+        <button id="prevRoom">Previous Room</button>
+        <button id="nextRoom">Next Room</button>
+        <button id="nextSchool">Next School</button>
+    </div>
+    <div class="iframe-container">
+        <!-- Single iframe will be inserted here -->
     </div>
 
     <script>
-        var plots = {{ plots | tojson | safe }};
+        
+        var currentMunicipalityIndex = 0;
+        var currentSchoolIndex = 0;
+        var currentRoomIndex = 0;
+        var plots = null;
 
-        if(Object.keys(plots).length === 0) {
-            // No models are trained, so display the message
-            var iframeContainer = document.querySelector('.iframe-container');
-            var message = document.createElement('p');
-            message.innerHTML = `No models trained, so no logs to display.
-            For API instructions, please check out the <a href="/docs">docs</a>`;
-            iframeContainer.appendChild(message);
-        } else {
-            // Existing logic to display plots
-            var municipalities = Object.keys(plots);
-            var currentMunicipalityIndex = 0;
-            var currentSchoolIndex = 0;
+        var currentMunicipality;
+        var currentSchool;
+        var currentRoom;
 
-            function updateIframes() {
-                var iframeContainer = document.querySelector('.iframe-container');
-                iframeContainer.innerHTML = ''; // Clear existing iframes
+        const iframeContainer = document.querySelector('.iframe-container');
 
-                var currentMunicipality = municipalities[currentMunicipalityIndex];
-                var currentSchool = Object.keys(plots[currentMunicipality])[currentSchoolIndex];
-                var rooms = plots[currentMunicipality][currentSchool];
+        const clearIframes = (container) => {
+            container.innerHTML = '';
+        };
 
-                rooms.forEach(function(room) {
-                    var iframe = document.createElement('iframe');
-                    iframe.src = `/plots/${currentMunicipality}/${currentSchool}/${room}`;
-                    iframeContainer.appendChild(iframe);
-                });
+        const fetchPlotStructure = async () => {
+            try {
+                if (!plots) { 
+                    const response = await fetch('/get_structure/');
+                    plots = await response.json();
+                }
+            } catch (error) {
+                console.error("An error occurred while fetching the plot structure:", error);
+            }
+        };
+
+        const fetchSinglePlot = async () => {
+            try {
+                const response = await fetch(`/plots/${currentMunicipality}/${currentSchool}/${currentRoom}`);
+                return await response.json();
+            } catch (error) {
+                console.error("An error occurred while fetching plot:", error);
+            }
+        };
+
+        const updateSingleIframe = async () => {
+            try {
+                clearIframes(iframeContainer);
+                const data = await fetchSinglePlot();
+                const iframe = document.createElement('iframe');
+                iframe.src = data.path;
+                iframeContainer.appendChild(iframe);
+                
+                updateCurrentInfo(); // Call the new function here
+            } catch (error) {
+                console.error("An error occurred while fetching a single plot:", error);
+            }
+        };
+
+
+        const initializeDashboard = async () => {
+            await fetchPlotStructure();
+            
+            console.log('Initializing dashboard');
+            console.log('Current municipality:', currentMunicipality);
+            const municipalities = Object.keys(plots);
+            currentMunicipality = municipalities[currentMunicipalityIndex];
+            currentSchool = Object.keys(plots[currentMunicipality])[currentSchoolIndex];
+            currentRoom = plots[currentMunicipality][currentSchool][currentRoomIndex];
+
+            updateSingleIframe();
+        };
+
+        const prevSchool = () => {
+            // Logic for switching the previous municipality
+            currentMunicipalityIndex--;
+            if (currentMunicipalityIndex < 0) {
+                currentMunicipalityIndex = 0; // or loop back to the last municipality
+            }
+            currentMunicipality = Object.keys(plots)[currentMunicipalityIndex];
+            currentSchool = Object.keys(plots[currentMunicipality])[0];  // Assume the first school
+            currentRoomIndex = 0; // Reset to the first room
+            updateSingleIframe();
+        };
+
+        const nextSchool = () => {
+            // Logic for switching the next municipality
+            currentMunicipalityIndex++;
+            if (currentMunicipalityIndex >= Object.keys(plots).length) {
+                currentMunicipalityIndex = Object.keys(plots).length - 1; // or loop back to the first municipality
+            }
+            currentMunicipality = Object.keys(plots)[currentMunicipalityIndex];
+            currentSchool = Object.keys(plots[currentMunicipality])[0];  // Assume the first school
+            currentRoomIndex = 0; // Reset to the first room
+            updateSingleIframe();
+        };
+
+
+        const prevRoom = () => {
+            // Logic for showing the previous room
+            currentRoomIndex--;
+            
+            if (currentRoomIndex < 0) {
+                // Move to the previous municipality
+                currentMunicipalityIndex--;
+                
+                if (currentMunicipalityIndex < 0) {
+                    currentMunicipalityIndex = Object.keys(plots).length - 1;  // Loop back to the last municipality
+                }
+                
+                currentMunicipality = Object.keys(plots)[currentMunicipalityIndex];
+                currentSchool = Object.keys(plots[currentMunicipality])[0];  // Assume the first school
+                
+                // Set currentRoomIndex to the last room of the new current school
+                currentRoomIndex = plots[currentMunicipality][currentSchool].length - 1;
+            }
+            
+            updateSingleIframe();
+        };
+
+        const nextRoom = () => {
+            // Logic for showing the next room
+            currentRoomIndex++;
+            
+            const maxRooms = plots[currentMunicipality][currentSchool].length;
+            
+            if (currentRoomIndex >= maxRooms) {
+                // Reset room index and switch to the next municipality
+                currentRoomIndex = 0;
+
+                currentMunicipalityIndex++;
+                
+                if (currentMunicipalityIndex >= Object.keys(plots).length) {
+                    currentMunicipalityIndex = 0; // Loop back to the first municipality if you're at the end
+                }
+                
+                currentMunicipality = Object.keys(plots)[currentMunicipalityIndex];
+                currentSchool = Object.keys(plots[currentMunicipality])[0];  // Assume the first school
             }
 
-            window.onload = function() {
-                updateIframes();
-            }
-        }
+            updateSingleIframe();
+        };
+
+        const updateCurrentInfo = () => {
+            const infoElement = document.getElementById('currentInfo');
+            const numRooms = plots[currentMunicipality][currentSchool].length;
+            infoElement.innerHTML = `Current Municipality: ${currentMunicipality} | School: ${currentSchool} | Room: ${currentRoom} (Room ${currentRoomIndex + 1}/${numRooms})`;
+        };
+
+
+        // ... (your other button-click logic, prevRoom, nextRoom, prevSchool, nextSchool)
+
+        // Bind next and previous school button click events
+        document.querySelector('#prevSchool').addEventListener('click', prevSchool);
+        document.querySelector('#nextSchool').addEventListener('click', nextSchool);
+        // Bind next and previous room button click events
+        document.querySelector('#prevRoom').addEventListener('click', prevRoom);
+        document.querySelector('#nextRoom').addEventListener('click', nextRoom);
+        
+        // Initialize dashboard upon window load
+        document.addEventListener("DOMContentLoaded", function(event) {
+            window.addEventListener('load', initializeDashboard);
+        });
     </script>
 </body>
 </html>

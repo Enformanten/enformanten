@@ -32,8 +32,8 @@ iframe {
     border: 3px solid #007BFF;
     border-radius: 12px;
     margin: 10px;
-    width: 400px;
-    height: 300px;
+    width: 1200px;
+    height: 600px;
     box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.1);
 }
 
@@ -57,7 +57,18 @@ button:hover {
 }
 
 /* Footer with buttons */
-.footer {
-    padding: 20px;
+.navigation {
     text-align: center;
+    padding: 20px;
+    background-color: #f1f1f1;
+    margin-bottom: 20px;  /* Added space between the navigation buttons and the plots */
 }
+
+/* Footer with buttons */
+.currentInfo {
+    text-align: center;
+    padding: 20px;
+    background-color: #f1f1f1;
+}
+
+
