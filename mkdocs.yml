@@ -1,0 +1,64 @@
+site_name: Tilly # Name of your repo
+repo_url: https://github.com/NTTDATAInnovation/tilly  # url
+
+theme: # This is the config for prettines
+  name: material  # we have installed this in the previous step
+  palette:
+    - scheme: default
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+    - scheme: slate
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
+
+nav:
+  # we will fill this one in in the next section
+
+markdown_extensions:
+  - pymdownx.snippets:
+      check_paths: true
+
+plugins:
+  - search:
+  - mkdocstrings: # This is the config for the python docs
+      handlers:
+        python:
+          options:
+            show_signature_annotations: true
+            show_source: true
+            show_submodules: true
+watch: # this is optional, it helps to test the documentation locally. 
+  - src # or wherever you have your python code. # url
+
+theme: # This is the config for prettines
+  name: material  # we have installed this in the previous step
+  palette:
+    - scheme: default
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+    - scheme: slate
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
+
+nav:
+  # we will fill this one in in the next section
+
+markdown_extensions:
+  - pymdownx.snippets:
+      check_paths: true
+
+plugins:
+  - search:
+  - mkdocstrings: # This is the config for the python docs
+      handlers:
+        python:
+          options:
+            show_signature_annotations: true
+            show_source: true
+            show_submodules: true
+watch: # this is optional, it helps to test the documentation locally. 
+  - tilly # or wherever you have your python code.
