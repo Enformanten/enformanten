@@ -2,7 +2,7 @@ name: make_docs
 on:
   push:
     branches:
-      - main  # so, the worflow runs whenever main changes.
+      - master  # so, the worflow runs whenever main changes.
 jobs:
   make_docs:
     runs-on: ubuntu-latest
