@@ -14,7 +14,7 @@ theme: # This is the config for prettines
         name: Switch to light mode
 
 nav:
-  # we will fill this one in in the next section
+  - Introduction: index.md  
 
 markdown_extensions:
   - pymdownx.snippets:
