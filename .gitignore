@@ -25,3 +25,6 @@ tilly/api/database/data/__pycache__/models.cpython-310.pyc
 tilly/dashboard/plots
 users.db
 .python-version
+
+# mkdocs documentation
+site/
