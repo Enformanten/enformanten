@@ -1,0 +1,16 @@
+name: make_docs
+on:
+  push:
+    branches:
+      - main  # so, the worflow runs whenever main changes.
+jobs:
+  make_docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - uses: snok/install-poetry@v1
+      - run: poetry install --only docs # this is why mkdocs is not with the other dev dependecies.
+      - run: poetry run mkdocs gh-deploy --force --clean --verbose
