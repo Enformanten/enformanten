@@ -37,7 +37,8 @@ def predict(
     model_registry: ModelRegistry = Depends(get_current_registry),
 ):
     logger.debug("Predict endpoint called")
-    if status := prediction_flow(session, model_registry):
+    if model_registry:
+        status = prediction_flow(session, model_registry)
         response = f"Scoring sequence completed - Pushed: {status}"
     else:
         response = "No models available - please train first"

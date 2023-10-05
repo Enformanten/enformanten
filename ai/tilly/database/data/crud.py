@@ -11,19 +11,27 @@ def get_snowflake_conn() -> SnowflakeConnection:
     return connect(**SNOWFLAKE_CREDENTIALS)
 
 
+def log_size(df) -> pd.DataFrame:
+    logger.info(f"Retrieved {len(df)} rows | {df.SKOLE_ID.nunique()} rooms")
+    return df
+
+
 def retrieve_data(session: Session, table: object) -> dict[str, pd.DataFrame]:
     """retrieve all timeslots using sqlalchemy"""
-    logger.debug(f"Retrieving data from {table.__tablename__} ..")
+    logger.debug(f"Retrieving data from {table.__tablename__}")
 
-    query = session.query(table).limit(1000).statement  # .limit(5000)
+    query = session.query(table).statement  # .limit(5000)
 
-    dataf = (
-        pd.read_sql(query, session.bind)
-        .assign(SKOLE_ID=lambda d: d.SKOLE + "_" + d.ID)
-        .rename(str, axis="columns")  # Fixes weird SA bug
-    )
-    logger.info(f"Retrieved {len(dataf)} rows | {dataf.SKOLE_ID.nunique()} rooms")
-    return {school_room: df for school_room, df in dataf.groupby("SKOLE_ID")}
+    return {
+        school_room: df
+        for school_room, df in (
+            pd.read_sql(query, session.bind)
+            .pipe(log_size)
+            .assign(SKOLE_ID=lambda d: d.SKOLE + "_" + d.ID)
+            .rename(str, axis="columns")  # Fixes weird SA bug
+            .groupby("SKOLE_ID")
+        )
+    }
 
 
 def push_data(rooms: pd.DataFrame, table: object | str = SCORED_TABLE_NAME) -> None:
