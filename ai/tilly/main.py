@@ -2,12 +2,12 @@ import uvicorn
 from fastapi import Depends, FastAPI
 from fastapi.staticfiles import StaticFiles
 
-import tilly.config as c
 from tilly.database.users.crud import create_db_and_tables
 from tilly.routes import predict, train, room, dashboard
 from tilly.users.auth import auth_backend, current_active_user, fastapi_users
 from tilly.users.initial_users import create_initial_users
 from tilly.users.schemas import UserCreate, UserRead, UserUpdate
+import tilly.config as c
 
 
 app = FastAPI(
@@ -26,14 +26,12 @@ async def on_startup():
     await create_initial_users()
 
 
-# app.mount("/static", StaticFiles(directory=c.PLOTS_DIR), name="static")
 app.mount("/static", StaticFiles(directory="tilly/dashboard"), name="static")
 
 
 app.include_router(
     dashboard.router,
     tags=["dashboard"],
-    # dependencies=[Depends(current_active_user)],
 )
 
 app.include_router(

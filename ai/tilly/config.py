@@ -24,32 +24,24 @@ PLOTS_DIR = Path("tilly/dashboard/plots")
 
 
 ################
-# DATA FACTORY DB
+# DATA FACTORY TABLES
 ################
 
 # Table to load training data from
-TRAINING_TABLE_NAME = "4_FEATURIZ_DRIFTOPTIMERING_TRAINING_TEST"
-
+TRAINING_TABLE_NAME = config("TRAINING_TABLE")
 # Table to load data to predict on from
-UNSCORED_TABLE_NAME = "4_FEATURIZ_DRIFTOPTIMERING_PREDICT_TEST"
-
+UNSCORED_TABLE_NAME = config("PREDICT_TABLE")
 # Table to append predictions in
-SCORED_TABLE_NAME = "1_RAW_DRIFTOPTIMERINGSMODEL_TEST"
+SCORED_TABLE_NAME = config("SCORED_TABLE")
 
+OUTPUT_COLUMNS = ["ID", "KOMMUNE", "DATE", "TIME", "ANOMALY_SCORE", "IN_USE"]
+
+
+################
 # snowflake credentials
+################
+
 SNOWFLAKE_CREDENTIALS = config("SNOWFLAKE_CREDENTIALS", cast=literal_eval)
-
-
-OUTPUT_COLUMNS = [
-    "DATE",
-    "TIME",
-    "DATETIME",
-    "ID",
-    "KOMMUNE",
-    "IN_USAGE",
-    "ANOMALY_SCORE",
-]
-
 
 ################
 # MODEL

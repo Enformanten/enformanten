@@ -9,22 +9,13 @@ workshop-results
 .ruff_cache
 config.cfg
  __pycache__/
-*/__pycache__/
-*/*/__pycache__/
-*/*/*/__pycache__/
-*/*/*/*/__pycache__/
-*/*/*/*/*/__pycache__/
-*/*/*/*/*/*/__pycache__/
-*/*/*/*/*/*/*/__pycache__/
-*/*/*/*/*/*/*/*/__pycache__/
-*/*/*/*/*/*/*/*/*/__pycache__/
-*/*/*/*/*/*/*/*/*/*/__pycache__/
-*/*/*/*/*/*/*/*/*/*/*/__pycache__/
+**/*/__pycache__/
  *.pyc
-tilly/api/database/data/__pycache__/models.cpython-310.pyc
-tilly/dashboard/plots
+ai/tilly/dashboard/plots
 users.db
 .python-version
 
 # mkdocs documentation
 site/
+ai/data/*
+ai/results/*
