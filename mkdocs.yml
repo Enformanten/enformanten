@@ -1,4 +1,4 @@
-site_name: Tilly # Name of your repo
+site_name: GovTech - Smart M2 # Name of your repo
 repo_url: https://github.com/NTTDATAInnovation/tilly  # url
 
 theme: # This is the config for prettines
@@ -30,7 +30,7 @@ plugins:
             show_source: true
             show_submodules: true
 watch: # this is optional, it helps to test the documentation locally. 
-  - src # or wherever you have your python code. # url
+  - ./ # or wherever you have your python code. # url
 
 theme: # This is the config for prettines
   name: material  # we have installed this in the previous step
@@ -60,5 +60,3 @@ plugins:
             show_signature_annotations: true
             show_source: true
             show_submodules: true
-watch: # this is optional, it helps to test the documentation locally. 
-  - tilly # or wherever you have your python code.
