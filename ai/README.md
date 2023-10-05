@@ -33,16 +33,21 @@ az acr repository show-tags --name acrgovtech --repository acrgovtech
 
 # Set the tag for the Docker image
 export TAG=<your_tag>
+export NAME="acrgovtech.azurecr.io/acrgovtech"
+
+export TAG="V5"
+
+sudo docker build --no-cache -t $NAME:$TAG -t $NAME:latest .
 
 # Build and tag the Docker image
-sudo docker build -t acrgovtech.azurecr.io/acrgovtech:$TAG -f gui/dockerfile .
+sudo docker build -t $NAME:$TAG -t latest .
 
 # Run the Docker image on port 8000
-sudo docker run -p 8000:8000 acrgovtech.azurecr.io/acrgovtech:latest
+sudo docker run -p 8000:8000 $NAME:latest
 
 # Push the Docker image to the Azure Container Registry
-sudo docker push acrgovtech.azurecr.io/acrgovtech:latest
-sudo docker push acrgovtech.azurecr.io/acrgovtech:$TAG
+sudo docker push $NAME:latest
+sudo docker push $NAME:$TAG
 
 # Restart the Azure Web App with the new version
 az webapp restart --name app-govtech --resource-group rg-govtech

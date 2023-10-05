@@ -1,7 +1,7 @@
 from sqlalchemy import Boolean, Column, Date, Float, Integer, String, Time
 from sqlalchemy.ext.declarative import declarative_base
 
-from tilly.config import TRAINING_TABLE_NAME, UNSCORED_TABLE_NAME, SCORED_TABLE_NAME
+from ai.tilly.config import TRAINING_TABLE_NAME, UNSCORED_TABLE_NAME, SCORED_TABLE_NAME
 
 DeclarativeBase = declarative_base()
 
