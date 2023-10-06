@@ -3,7 +3,7 @@ from fastapi import Depends, FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from tilly.database.users.crud import create_db_and_tables
-from tilly.routes import predict, train, room, dashboard
+from tilly.routes import predict, train, room, dashboard, heartbeat
 from tilly.users.auth import auth_backend, current_active_user, fastapi_users
 from tilly.users.initial_users import create_initial_users
 from tilly.users.schemas import UserCreate, UserRead, UserUpdate
@@ -66,6 +66,11 @@ app.include_router(
     room.router,
     tags=["room"],
     dependencies=[Depends(current_active_user)],
+)
+
+app.include_router(
+    heartbeat.router,
+    tags=["heartbeat"],
 )
 
 

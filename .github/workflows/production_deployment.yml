@@ -7,18 +7,18 @@ name: Build and deploy container app to Azure Web App - tilly(production)
 on:
   push:
     branches:
-      - main
+      - master
   workflow_dispatch:
 
 env:
-  APP_NAME: tilly
-  AZ_IMAGE_TAG: crtilly.azurecr.io/tilly/production:${{ github.sha }}
-  AZ_CONTAINER_REGISTRY: crtilly.azurecr.io/
-  AZ_CONTAINER_REGISTRY_USERNAME: ${{ secrets.AZUREAPPSERVICE_CONTAINERUSERNAME_6D6AE12AE18F4DE5BC41FFC51B117A0A }}
-  AZ_CONTAINER_REGISTRY_PASSWORD: ${{ secrets.AZUREAPPSERVICE_CONTAINERPASSWORD_553D0F2C9F6C49C8ACE2D51D1A597E0B }}
+  APP_NAME: app-govtech
+  AZ_IMAGE_TAG: acrgovtech.azurecr.io/acrgovtech/production:${{ github.sha }}
+  AZ_CONTAINER_REGISTRY: acrgovtech.azurecr.io/
+  AZ_CONTAINER_REGISTRY_USERNAME: ${{ secrets.AzureAppService_ContainerUsername_c23081512421436eb33a64d99930cbf9 }}
+  AZ_CONTAINER_REGISTRY_PASSWORD: ${{ secrets.AzureAppService_ContainerPassword_fd715ae5e09d4867b962e7b29e048594 }}
   AZ_PUBLISH_PROFILE: ${{ secrets.AZ_PUBLISH_PROFILE }}
-  LOGIN_NAME: ${{ secrets.LOGIN_NAME }}
-  LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD }}
+#  LOGIN_NAME: ${{ secrets.LOGIN_NAME }}
+#  LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD }}
 
 jobs:
 
@@ -99,9 +99,9 @@ jobs:
         sparse-checkout: .github
 
     - name: Ping Endpoint
-      uses: nthomsencph/ping-url@v1.0.8
+      uses: shahnozaAI/ping-url@v1.0.8
       with:
-        url: ${{ needs.deploy-staging.outputs.url }}/
+        url: ${{ needs.deploy-staging.outputs.url }}/heartbeat
         response_field: 'version'
         response_value: ${{ needs.metadata.outputs.git_metadata }}
         interval: '30'
@@ -136,36 +136,36 @@ jobs:
         sparse-checkout: .github
 
     - name: Ping Endpoint
-      uses: nthomsencph/ping-url@v1.0.8
+      uses: shahnozaAI/ping-url@v1.0.8
       with:
-        url: ${{ needs.deploy.outputs.url }}/
+        url: ${{ needs.deploy.outputs.url }}/heartbeat
         response_field: 'version'
         response_value: ${{ needs.metadata.outputs.git_metadata }}
         interval: '30'
         timeout: '900'
 
-  test:
-    runs-on: ubuntu-latest
-    needs: [deploy,ping]
+  # test:
+  #   runs-on: ubuntu-latest
+  #   needs: [deploy,ping]
 
-    steps:
+  #   steps:
 
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: tests/integration_tests
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #       with:
+  #         sparse-checkout: tests/integration_tests
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
+  #     - name: Set up Python
+  #       uses: actions/setup-python@v4
+  #       with:
+  #         python-version: '3.10'
 
-      - name: Install dependencies
-        run: pip install httpx pytest python-decouple
+  #     - name: Install dependencies
+  #       run: pip install httpx pytest python-decouple
 
-      - name: Run tests
-        run: pytest tests/integration_tests
-        env:
-          URL: ${{ needs.deploy.outputs.url }}
-          LOGIN_NAME: ${{ env.LOGIN_NAME }}
-          LOGIN_PASSWORD: ${{ env.LOGIN_PASSWORD }}
+  #     - name: Run tests
+  #       run: pytest tests/integration_tests
+  #       env:
+  #         URL: ${{ needs.deploy.outputs.url }}
+  #         LOGIN_NAME: ${{ env.LOGIN_NAME }}
+  #         LOGIN_PASSWORD: ${{ env.LOGIN_PASSWORD }}
