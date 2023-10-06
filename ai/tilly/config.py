@@ -12,6 +12,7 @@ GIT_METADATA = config("GIT_METADATA", default="local")
 SECRET = config("SECRET")
 USERS = config("USERS", cast=literal_eval)
 USER_DATABASE_URL = config("DATABASE_URL")
+DB_ECHO = False
 
 ################
 # API
@@ -47,5 +48,4 @@ SNOWFLAKE_CREDENTIALS = config("SNOWFLAKE_CREDENTIALS", cast=literal_eval)
 # MODEL
 ################
 MODEL_PARAMS = {"n_estimators": 300, "random_state": 42}
-
-FEATURES = ["CO2_ACC", "CO2"]
+FEATURES = ["CO2_velocity", "CO2_acceleration", "CO2_smoothed", "is_night", "CO2_log"]

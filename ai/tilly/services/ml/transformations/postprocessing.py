@@ -12,35 +12,34 @@ def make_all_methods_static(cls):
 
 @make_all_methods_static
 class Postprocessor:
-    """A class that contains all the postprocessing logic for the
+    """Contains all the postprocessing logic for the
     model output"""
 
-    def heuristics(timeslots: pd.DataFrame) -> pd.DataFrame:
+    def heuristics(room: pd.DataFrame) -> pd.DataFrame:
         """Add heuristic rules to predicted data"""
-        return (
-            timeslots.assign(
-                IN_USE=lambda d: np.where(
-                    d["CO2"].lt(400),
-                    0,
-                    d["IN_USE"],
-                ),
-            )
-            .assign(  # Remove anomalies when CO2 accelerates or CO2 is high
-                IN_USE=lambda d: np.where(
-                    (d["CO2_ACC"].gt(0) & d["CO2"].gt(600)) | (d["CO2"].gt(1000)),
-                    1,
-                    d["IN_USE"],
-                )
-            )
-            .assign(
-                # If the prior rules change the IN_USE value, then
-                # update the usage score to reflect this change
-                ANOMALY_SCORE=lambda d: np.where(
-                    (d["IN_USE"].eq(1) & d["ANOMALY_SCORE"].lt(0.5))
-                    | (d["IN_USE"].eq(0) & d["ANOMALY_SCORE"].gt(0.5)),
-                    1 - d["ANOMALY_SCORE"],
-                    d["ANOMALY_SCORE"],
-                )
+
+        # Rule 1: Night Time Filtering
+        hour = room["DATETIME"].dt.hour
+        mask_night = (hour >= 0) & (hour < 6)
+        mask_score = room["ANOMALY_SCORE"] <= 0.7
+        room.loc[mask_night & mask_score, "IN_USE"] = 0
+
+        # Rule 2: Stand-Alone Instances
+        prev_IN_USE = room["IN_USE"].shift(1, fill_value=0)
+        next_IN_USE = room["IN_USE"].shift(-1, fill_value=0)
+        mask_standalone = (
+            (prev_IN_USE == 0) & (room["IN_USE"] == 1) & (next_IN_USE == 0)
+        )
+        room.loc[mask_standalone, "IN_USE"] = 0
+
+        return room.assign(
+            # If the prior rules change the IN_USE value, then
+            # update the usage score to reflect this change
+            ANOMALY_SCORE=lambda d: np.where(
+                (d["IN_USE"].eq(1) & d["ANOMALY_SCORE"].lt(0.5))
+                | (d["IN_USE"].eq(0) & d["ANOMALY_SCORE"].gt(0.5)),
+                1 - d["ANOMALY_SCORE"],
+                d["ANOMALY_SCORE"],
             )
         )
 
@@ -124,5 +123,4 @@ class Postprocessor:
             combined_frames.append(combined_df)
 
         # Concatenate all frames vertically
-        final_combined = pd.concat(combined_frames, ignore_index=True)
-        return final_combined
+        return pd.concat(combined_frames, ignore_index=True)

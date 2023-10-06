@@ -53,7 +53,7 @@ def process_for_dashboard(rooms: dict[str, pd.DataFrame]) -> dict[str, pd.DataFr
                 + f"- {school} ({municipality} KOMMUNE)"
             ),
             width=3000,
-            hover_data=room[["CO2_ACC"]],
+            hover_data=room[["CO2_smoothed", "ANOMALY_SCORE"]],
         )
         fig.update_traces(dict(marker_line_width=0))
         output[(municipality, school, room_id)] = fig

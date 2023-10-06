@@ -1,16 +1,17 @@
 { 
-    "version": "0.2.0",
+    "version": "0.4.0",
     "configurations": [
         {
             "name": "Python: FastAPI",
             "type": "python",
             "request": "launch",
             "module": "uvicorn",
+            "cwd": "${workspaceFolder}/ai",
             "args": [
                 "tilly.main:app",
                 "--reload", 
                 "--port", 
-                "8001"
+                "8000"
             ],
             "jinja": true,
             "justMyCode": true

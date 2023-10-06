@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from typing import Generator
 
-from tilly.config import SNOWFLAKE_CREDENTIALS
+from tilly.config import SNOWFLAKE_CREDENTIALS, DB_ECHO
 
 
 # Define your Snowflake connection parameters
@@ -12,7 +12,7 @@ SNOWFLAKE_URL = (
 ).format(**SNOWFLAKE_CREDENTIALS)
 
 # Create a synchronous engine
-engine = create_engine(SNOWFLAKE_URL, echo=True, future=True)
+engine = create_engine(SNOWFLAKE_URL, echo=DB_ECHO, future=True)
 Session = sessionmaker(bind=engine)
 
 

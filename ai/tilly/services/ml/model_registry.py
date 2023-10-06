@@ -102,14 +102,9 @@ class ModelRegistry:
                 pbar.update(1)
 
                 if not timeslots.empty:
-                    # extract features
-                    features = timeslots[FEATURES]
-
-                    # fit model
-                    model = Model().fit(X=features)
-
-                    # save model to registry
-                    self.models[name] = model
+                    features = timeslots[FEATURES]  # extract features
+                    model = Model().fit(X=features)  # fit model
+                    self.models[name] = model  # add model to registry
 
                     # make predictions
                     output[name]: DataFrame = self._predict(name, timeslots)
@@ -117,27 +112,16 @@ class ModelRegistry:
         return output
 
     def predict(self, rooms: dict[str, DataFrame]) -> dict[str, DataFrame]:
-        """
-        Makes a prediction on a .
-
-        Args:
-            X: A single input instance.
-
-        Returns:
-            A dictionary mapping class indices to predicted
-            probabilities.
+        """Runs an inference flow in which the rooms are
+        first preprocessed, the predicted on and lastly postprocessed.
         """
         _preprocessed: dict[str, DataFrame] = self.preprocess(rooms)
         _predictions = {
             name: self._predict(name, room)
             for name, room in tqdm(_preprocessed.items())
+            if not room.empty
         }
         return self.postprocess(_predictions)
-
-    def preprocess(self, timeslots: dict[str, DataFrame]) -> dict[str, DataFrame]:
-        """Featurize the input data."""
-        logger.info("Preprocessing data...")
-        return {name: room.pipe(T.featurize) for name, room in tqdm(timeslots.items())}
 
     def _predict(self, name: str, room: DataFrame) -> DataFrame:
         """Make predictions on the input data."""
@@ -160,6 +144,11 @@ class ModelRegistry:
             ANOMALY_SCORE=scores,
             IN_USE=preds,
         )
+
+    def preprocess(self, timeslots: dict[str, DataFrame]) -> dict[str, DataFrame]:
+        """Featurize the input data."""
+        logger.info("Preprocessing data...")
+        return {name: room.pipe(T.featurize) for name, room in tqdm(timeslots.items())}
 
     def postprocess(self, predictions: dict[str, DataFrame]) -> dict[str, DataFrame]:
         """Postprocess the predictions."""

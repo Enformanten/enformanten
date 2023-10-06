@@ -8,6 +8,44 @@ class Preprocessor:
     model input"""
 
     @classmethod
+    def estimate_usage(
+        cls, data: pd.DataFrame, usage_coeff=2.1, usage_min=0.1, usage_max=0.4
+    ) -> float:
+        """Estimates the usage of a given room from the union of
+        - booked timeslots: Timeslots within a registered booking, and
+        - Scheduled timeslots: TImeslots within the school schema.
+
+        This is used as a prior for our anomaly detection model.
+
+        Args:
+            data (pd.DataFrame): Timeslots
+            usage_coeff (float, optional): Usage coefficient. Defaults to 2.1.
+                This is a heuristic measure used to scale the estimated usage
+            usage_min (float, optional): Minimum usage. Defaults to 0.1.
+                This is a heuristic lower bound for the net estimated usage of
+                a room.
+            usage_max (float, optional): Maximum usage. Defaults to 0.4.
+                This is a heuristic upper bound for the net estimated usage of
+                a room.
+        """
+        try:
+            used_slots = (data["SKEMALAGT"] | data["BOOKET"].fillna(False)).sum()
+            used_slots = max(used_slots, usage_min)
+            return min(usage_coeff * used_slots / len(data), usage_max)
+        except ZeroDivisionError:
+            return "auto"
+
+    @classmethod
+    def merge_dt(cls, df, date, time, name, sep=" "):
+        return df.assign(
+            **{
+                name: lambda d: pd.to_datetime(
+                    d[date].astype(str) + sep + d[time].astype(str)
+                )
+            }
+        )
+
+    @classmethod
     def add_missing_timeslots(cls, df: pd.DataFrame, freq: str = "15T") -> pd.DataFrame:
         """Adds the rows that are missing from the DataFrame, by merging
         it with a DataFrame containing all the timeslots."""
@@ -102,33 +140,45 @@ class Preprocessor:
         return df[mask]
 
     @classmethod
-    def calculate_kinematic_quantities(cls, df, *, metric, window) -> pd.DataFrame:
+    def calculate_kinematic_quantities(
+        cls, df, metric, *, window, prefix=None
+    ) -> pd.DataFrame:
         """Add the rolling velocity, acceleration and jerk for a given metric.
         The rolling quantities are calculated using the gradient of the metric and
         the given window size. The resulting null values are filled with zeros"""
+
+        if prefix is None:
+            prefix = metric
+
         return df.assign(
             **{
-                f"{metric}_velocity": lambda d: (
+                # First order derivative of the metric
+                f"{prefix}_velocity": lambda d: (
                     d[metric].rolling(window=window).apply(lambda x: np.gradient(x)[-1])
                 ),
-                f"{metric}_acceleration": lambda d: (
-                    d[f"{metric}_velocity"]
+                # Second order derivative of the metric
+                f"{prefix}_acceleration": lambda d: (
+                    d[f"{prefix}_velocity"]
                     .rolling(window=window)
                     .apply(lambda x: np.gradient(x)[-1])
                 ),
-                f"{metric}_jerk": lambda d: (
-                    d[f"{metric}_acceleration"]
+                # Third order derivative of the metric
+                f"{prefix}_jerk": lambda d: (
+                    d[f"{prefix}_acceleration"]
                     .rolling(window=window)
                     .apply(lambda x: np.gradient(x)[-1])
                 ),
+                # Log of the metric - Useful for identifying
+                # natural diffusion of CO2 from the room
+                f"{prefix}_log": lambda d: (d[metric].fillna(0)),
             }
         ).assign(
             **{
-                f"{metric}_velocity": lambda d: (d[f"{metric}_velocity"].fillna(0)),
-                f"{metric}_acceleration": lambda d: (
-                    d[f"{metric}_acceleration"].fillna(0)
+                f"{prefix}_velocity": lambda d: (d[f"{prefix}_velocity"].fillna(0)),
+                f"{prefix}_acceleration": lambda d: (
+                    d[f"{prefix}_acceleration"].fillna(0)
                 ),
-                f"{metric}_jerk": lambda d: (d[f"{metric}_jerk"].fillna(0)),
+                f"{prefix}_jerk": lambda d: (d[f"{prefix}_jerk"].fillna(0)),
             }
         )
 
@@ -159,4 +209,14 @@ class Preprocessor:
                     d[metric], sigma=std_dev
                 )
             }
+        )
+
+    @classmethod
+    def add_time_features(cls, df, *, night_start=23, night_end=6):
+        """Add time features to the DataFrame"""
+        return df.assign(
+            is_night=lambda d: (
+                (d["DATETIME"].dt.hour >= night_start)
+                & (d["DATETIME"].dt.hour <= night_end)
+            ).astype(int),
         )

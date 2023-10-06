@@ -6,11 +6,12 @@ from tilly.config import MODEL_PARAMS
 
 
 class Model:
-    def __init__(self, estimated_usage: str | float = "auto"):
+    def __init__(
+        self, estimated_usage: str | float = "auto", model_params=MODEL_PARAMS
+    ):
         self.model = IsolationForest(
             contamination=estimated_usage,
-            **MODEL_PARAMS,
-            # n_jobs=-1,
+            **model_params,
         )
 
     def fit(self, X: DataFrame) -> "Model":
@@ -29,4 +30,4 @@ class Model:
         returns the normalized scores.
         """
         y_hat = self.model.decision_function(X)
-        return interp(y_hat, (min(y_hat), max(y_hat)), (0, 1))
+        return 1 - interp(y_hat, (min(y_hat), max(y_hat)), (0, 1))

@@ -26,8 +26,8 @@ def retrieve_data(session: Session, table: object) -> dict[str, pd.DataFrame]:
         school_room: df
         for school_room, df in (
             pd.read_sql(query, session.bind)
-            .pipe(log_size)
             .assign(SKOLE_ID=lambda d: d.SKOLE + "_" + d.ID)
+            .pipe(log_size)
             .rename(str, axis="columns")  # Fixes weird SA bug
             .groupby("SKOLE_ID")
         )
