@@ -1,6 +1,6 @@
 # ModelRegistry
 
-::: ai.tilly.services.ml.model_registry.ModelRegistry
+::: ai.tilly.services
     handler: python
     options:
       show_root_heading: true
