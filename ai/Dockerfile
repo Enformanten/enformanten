@@ -7,7 +7,6 @@ RUN PIP_ROOT_USER_ACTION=ignore pip install --upgrade pip && \
     PIP_ROOT_USER_ACTION=ignore pip install  -r requirements.txt
 
 COPY tilly ./tilly
-COPY .env .env
 
 ARG GIT_METADATA=dockerfile
 ENV GIT_METADATA=$GIT_METADATA
