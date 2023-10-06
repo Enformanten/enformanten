@@ -36,6 +36,7 @@ def predict(
     session: Session = Depends(get_session),
     model_registry: ModelRegistry = Depends(get_current_registry),
 ):
+    """Hello!"""
     logger.debug("Predict endpoint called")
     if model_registry:
         status = prediction_flow(session, model_registry)

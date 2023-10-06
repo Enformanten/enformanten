@@ -50,7 +50,12 @@ nav:
 markdown_extensions:
   - pymdownx.snippets:
       check_paths: true
-
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.superfences:
+  
 plugins:
   - search:
   - mkdocstrings: # This is the config for the python docs

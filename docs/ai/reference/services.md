@@ -1,4 +1,4 @@
-# ModelRegistry
+# Services
 
 ::: ai.tilly.services
     handler: python
