@@ -19,8 +19,8 @@ DB_ECHO = False
 ################
 
 TITLE = "Tilly API"
-DEBUG = True
 DESCRIPTION = "Unsupervised anomaly detection for room usage"
+DEBUG = config("DEBUG", cast=bool, default=False)
 PLOTS_DIR = Path("tilly/dashboard/plots")
 
 
@@ -35,6 +35,7 @@ UNSCORED_TABLE_NAME = config("PREDICT_TABLE")
 # Table to append predictions in
 SCORED_TABLE_NAME = config("SCORED_TABLE")
 
+# Columns to output to the scored table
 OUTPUT_COLUMNS = ["ID", "KOMMUNE", "DATE", "TIME", "ANOMALY_SCORE", "IN_USE"]
 
 
@@ -47,5 +48,6 @@ SNOWFLAKE_CREDENTIALS = config("SNOWFLAKE_CREDENTIALS", cast=literal_eval)
 ################
 # MODEL
 ################
+
 MODEL_PARAMS = {"n_estimators": 300, "random_state": 42}
 FEATURES = ["CO2_velocity", "CO2_acceleration", "CO2_smoothed", "is_night", "CO2_log"]
