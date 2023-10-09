@@ -28,7 +28,6 @@ async def on_startup():
 
 app.mount("/static", StaticFiles(directory="tilly/dashboard"), name="static")
 
-
 app.include_router(
     dashboard.router,
     tags=["dashboard"],
