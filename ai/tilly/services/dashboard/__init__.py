@@ -4,7 +4,7 @@ import warnings
 
 # from loguru import logger
 
-from tilly.config import PLOTS_DIR
+from tilly.config import PLOTS_DIR, FEATURES
 
 
 pd.options.plotting.backend = "plotly"
@@ -44,6 +44,7 @@ def process_for_dashboard(rooms: dict[str, pd.DataFrame]) -> dict[str, pd.DataFr
 
         create_dir(municipality, school)
 
+        hover_features = FEATURES + ["ANOMALY_SCORE"]
         fig = room.sort_values("DATETIME", ascending=True).plot.bar(
             x="DATETIME",
             y="CO2",
@@ -53,7 +54,7 @@ def process_for_dashboard(rooms: dict[str, pd.DataFrame]) -> dict[str, pd.DataFr
                 + f"- {school} ({municipality} KOMMUNE)"
             ),
             width=3000,
-            hover_data=room[["CO2_smoothed", "ANOMALY_SCORE"]],
+            hover_data=room[hover_features],
         )
         fig.update_traces(dict(marker_line_width=0))
         output[(municipality, school, room_id)] = fig

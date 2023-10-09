@@ -60,21 +60,26 @@ class ModelRegistry:
     _lock = Lock()
 
     def __new__(cls):
-        """Singleton instance"""
+        """
+        Singleton pattern implementation, ensuring only one instance exists.
+        """
         with cls._lock:
             if cls._instance is None:
                 cls._instance = super(ModelRegistry, cls).__new__(cls)
         return cls._instance
 
     def __init__(self):
+        """
+        Initialize the ModelRegistry instance with an empty models dictionary.
+        """
         self.models: Dict[str, Model] = {}
 
     def train(self, timeslots: dict[str, DataFrame]) -> None:
         """
-        Fits the model to the given training data.
+        Train models on new timeslot data and store them in the registry.
 
         Args:
-            timeslots: A list of Timeslot instances.
+            timeslots (dict[str, DataFrame]): The timeslots data to train on, per room.
         """
         _preprocessed: dict[str, DataFrame] = self.preprocess(timeslots)
         room_results: dict[str, DataFrame] = self.fit_predict(_preprocessed)
@@ -83,16 +88,13 @@ class ModelRegistry:
         return _postprocessed
 
     def fit_predict(self, rooms: dict[str, DataFrame]) -> Dict[str, DataFrame]:
-        """Fits the model to the given training data, adds the model to the
-        registry, and makes predictions on the input data.
+        """Train models on new room data and make predictions.
 
         Args:
-            rooms: A list of Timeslot instances in the format of
-                {room_name: room_data}
+            rooms (dict[str, DataFrame]): Room data to fit and predict on.
 
         Returns:
-            A dictionary mapping room names to their data w/ predictions added
-                as columns.
+            Dict[str, DataFrame]: The predicted DataFrame for each room.
         """
 
         output = {}
@@ -103,7 +105,7 @@ class ModelRegistry:
 
                 if not timeslots.empty:
                     features = timeslots[FEATURES]  # extract features
-                    model = Model().fit(X=features)  # fit model
+                    model = Model(estimated_usage=0.3).fit(X=features)  # fit model
                     self.models[name] = model  # add model to registry
 
                     # make predictions
@@ -112,8 +114,14 @@ class ModelRegistry:
         return output
 
     def predict(self, rooms: dict[str, DataFrame]) -> dict[str, DataFrame]:
-        """Runs an inference flow in which the rooms are
-        first preprocessed, the predicted on and lastly postprocessed.
+        """
+        Make predictions using the pre-trained models in the registry.
+
+        Args:
+            rooms (dict[str, DataFrame]): Room data to predict on.
+
+        Returns:
+            dict[str, DataFrame]: The predicted DataFrame for each room.
         """
         _preprocessed: dict[str, DataFrame] = self.preprocess(rooms)
         _predictions = {
@@ -124,7 +132,17 @@ class ModelRegistry:
         return self.postprocess(_predictions)
 
     def _predict(self, name: str, room: DataFrame) -> DataFrame:
-        """Make predictions on the input data."""
+        """
+        Make predictions for a specific room using its corresponding
+          model in the registry.
+
+        Args:
+            name (str): The name of the room.
+            room (DataFrame): The room data to predict on.
+
+        Returns:
+            DataFrame: The predicted DataFrame for the room.
+        """
 
         # extract features
         features = room[FEATURES]
@@ -146,12 +164,27 @@ class ModelRegistry:
         )
 
     def preprocess(self, timeslots: dict[str, DataFrame]) -> dict[str, DataFrame]:
-        """Featurize the input data."""
+        """
+        Preprocesses the input timeslot data for each room.
+
+        Args:
+            timeslots (dict[str, DataFrame]): The timeslot data for each room.
+
+        Returns:
+            dict[str, DataFrame]: The preprocessed DataFrame for each room.
+        """
         logger.info("Preprocessing data...")
         return {name: room.pipe(T.featurize) for name, room in tqdm(timeslots.items())}
 
     def postprocess(self, predictions: dict[str, DataFrame]) -> dict[str, DataFrame]:
-        """Postprocess the predictions."""
+        """Postprocesses the prediction results for each room.
+
+        Args:
+            predictions (dict[str, DataFrame]): The predicted DataFrame for each room.
+
+        Returns:
+            dict[str, DataFrame]: The postprocessed DataFrame for each room.
+        """
         logger.info("Postprocessing data...")
         return {
             name: room.pipe(T.heuristics) for name, room in tqdm(predictions.items())

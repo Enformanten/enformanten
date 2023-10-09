@@ -64,7 +64,8 @@ jobs:
       with:
         push: true
         tags: ${{ env.AZ_IMAGE_TAG }}
-        file: ./ai/Dockerfile
+        # file: Dockerfile
+        context: ./ai
         build-args: |
             GIT_METADATA=${{ needs.metadata.outputs.git_metadata }}
         cache-from: type=gha

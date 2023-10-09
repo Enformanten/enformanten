@@ -155,6 +155,28 @@ class Preprocessor:
         return df[mask]
 
     @classmethod
+    def day_filter(cls, df: pd.DataFrame, *, min_ratio: float = 0.25) -> pd.DataFrame:
+        """Filter out days with too few data points
+        (days with less than min_ratio of the data points).
+        This is done to avoid overfitting on days with too
+        few data points,where the kinematic quantities are
+        not calculated correctly.
+        Min ratio is multiplied by 4*24 to get the number of
+        data points required for a day (4*24 is the number of
+        15 minute intervals in a day)
+
+        Args:
+            df (pd.DataFrame): DataFrame to filter
+            min_ratio (float, optional): Minimum ratio of data points
+                required for a day. Defaults to 0.25.
+
+        Returns:
+            df (pd.DataFrame): Filtered DataFrame
+        """
+        min_data_points_required = int(min_ratio * (4 * 24))
+        return df.groupby("DATE").filter(lambda x: len(x) >= min_data_points_required)
+
+    @classmethod
     def calculate_kinematic_quantities(
         cls, df, metric, *, window, prefix=None
     ) -> pd.DataFrame:
@@ -237,7 +259,7 @@ class Preprocessor:
         )
 
     @classmethod
-    def featurize(cls, df):
+    def featurize(cls, df: pd.DataFrame) -> pd.DataFrame:
         """Run the full preprocessing flow on a DataFrame"""
         return (
             df.pipe(cls.merge_dt, date="DATE", time="TIME", name="DATETIME")
@@ -246,6 +268,7 @@ class Preprocessor:
             .pipe(cls.remove_stagnate_intervals, target_col="CO2", threshold=5)
             .dropna(subset=["CO2"])
             .pipe(cls.drop_outliers, bounds={"CO2": (1, 8000)})
+            .pipe(cls.day_filter, min_ratio=0.25)
             .pipe(
                 cls.apply_time_group_funcs,
                 funcs=[

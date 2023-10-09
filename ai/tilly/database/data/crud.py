@@ -20,9 +20,14 @@ def retrieve_data(session: Session, table: object) -> dict[str, pd.DataFrame]:
     """retrieve all timeslots using sqlalchemy"""
     logger.debug(f"Retrieving data from {table.__tablename__}")
 
-    query = session.query(table).statement  # .limit(5000)
+    query = session.query(table).statement
+    # debug tools:
+    # query = session.query(table).limit(5000).statement
+    # query = session.query(table).where(
+    #   table.school == "Thorsager Skole"
+    # ).statement
 
-    return {
+    data = {
         school_room: df
         for school_room, df in (
             pd.read_sql(query, session.bind)
@@ -32,6 +37,8 @@ def retrieve_data(session: Session, table: object) -> dict[str, pd.DataFrame]:
             .groupby("SKOLE_ID")
         )
     }
+    print(len(data))
+    return data
 
 
 def push_data(rooms: pd.DataFrame, table: object | str = SCORED_TABLE_NAME) -> None:
