@@ -102,7 +102,7 @@ jobs:
     - name: Ping Endpoint
       uses: shahnozaAI/ping-url@v1.0.8
       with:
-        url: ${{ needs.deploy-staging.outputs.url }}/heartbeat
+        url: ${{ needs.deploy-staging.outputs.url }}/heartbeat/
         response_field: 'version'
         response_value: ${{ needs.metadata.outputs.git_metadata }}
         interval: '30'
@@ -139,7 +139,7 @@ jobs:
     - name: Ping Endpoint
       uses: shahnozaAI/ping-url@v1.0.8
       with:
-        url: ${{ needs.deploy.outputs.url }}/heartbeat
+        url: ${{ needs.deploy.outputs.url }}/heartbeat/
         response_field: 'version'
         response_value: ${{ needs.metadata.outputs.git_metadata }}
         interval: '30'
