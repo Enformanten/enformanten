@@ -1,0 +1,351 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "factoryName": {
+            "type": "string",
+            "metadata": "Data Factory name"
+        },
+        "LS_SNOWFLAKE": {
+            "type": "string"
+        },
+        "LS_BOOKINGS_SYDDJURS": {
+            "type": "string"
+        },
+        "LS_BLOB": {
+            "type": "string"
+        }
+    },
+    "variables": {
+        "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+    },
+    "resources": [
+        {
+            "name": "[concat(parameters('factoryName'), '/PL_BOOKINGS_SYDDJURS')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "description": "This pipeline fetches the last load date from the database of bookings and creates an array of days between last loaded and 30 days ahead. It then calls the Syddjurs Booking API day-for-day and puts in the designated storage container. Finally, it triggers the update of the raw table in Snowflake by a stored procedure.",
+                "activities": [
+                    {
+                        "name": "Get LAST_LOAD_DATE",
+                        "type": "Lookup",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "0.12:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "source": {
+                                "type": "SnowflakeSource",
+                                "query": {
+                                    "value": "select max(BOOKING_START::DATE)::Date as date from \"GOVTECH_DB\".\"RAW\".\"3_CLEANSED_SYDDJURS_BOOKINGS\";",
+                                    "type": "Expression"
+                                },
+                                "exportSettings": {
+                                    "type": "SnowflakeExportCopyCommand"
+                                }
+                            },
+                            "dataset": {
+                                "referenceName": "DS_SNOWFLAKE",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "database": "GOVTECH_DB",
+                                    "table": "3_CLEANSED_SYDDJURS_BOOKINGS",
+                                    "schema": "RAW"
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "name": "Set start date",
+                        "type": "SetVariable",
+                        "dependsOn": [
+                            {
+                                "activity": "Get LAST_LOAD_DATE",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "variableName": "start_date",
+                            "value": {
+                                "value": "@if(lessOrEquals(activity('Get LAST_LOAD_DATE').output.firstRow.DATE, utcNow()), activity('Get LAST_LOAD_DATE').output.firstRow.DATE, formatDateTime(utcNow(), 'yyyy-MM-dd'))",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    {
+                        "name": "Set end date",
+                        "type": "SetVariable",
+                        "dependsOn": [
+                            {
+                                "activity": "Get LAST_LOAD_DATE",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "variableName": "end_date",
+                            "value": {
+                                "value": "@formatDateTime(addDays(utcNow(), 30), 'yyyy-MM-dd')",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    {
+                        "name": "Get bookings",
+                        "type": "Copy",
+                        "dependsOn": [
+                            {
+                                "activity": "Set start date",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            },
+                            {
+                                "activity": "Set end date",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "timeout": "0.12:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "source": {
+                                "type": "RestSource",
+                                "httpRequestTimeout": "00:01:40",
+                                "requestInterval": "00.00:00:00.010",
+                                "requestMethod": "GET",
+                                "paginationRules": {
+                                    "supportRFC5988": "true"
+                                }
+                            },
+                            "sink": {
+                                "type": "JsonSink",
+                                "storeSettings": {
+                                    "type": "AzureBlobStorageWriteSettings"
+                                },
+                                "formatSettings": {
+                                    "type": "JsonWriteSettings"
+                                }
+                            },
+                            "enableStaging": false
+                        },
+                        "inputs": [
+                            {
+                                "referenceName": "DS_BOOKINGS_SYDDJURS",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "start_date": {
+                                        "value": "@variables('start_date')",
+                                        "type": "Expression"
+                                    },
+                                    "end_date": {
+                                        "value": "@variables('end_date')",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "referenceName": "DS_BOOKINGS_SYDDJURS_BLOB",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "year": {
+                                        "value": "@formatDateTime(variables('start_date'), 'yyyy')",
+                                        "type": "Expression"
+                                    },
+                                    "month": {
+                                        "value": "@formatDateTime(variables('start_date'), 'MM')",
+                                        "type": "Expression"
+                                    },
+                                    "day": {
+                                        "value": "@formatDateTime(variables('start_date'), 'dd')",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "name": "UPDATE_RAW",
+                        "type": "Lookup",
+                        "dependsOn": [
+                            {
+                                "activity": "Get bookings",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "timeout": "0.12:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "source": {
+                                "type": "SnowflakeSource",
+                                "query": "CALL \"RAW\".RAWLOADDATA('GOVTECH_DB', 'RAW', '1_RAW_SYDDJURS_BOOKINGS', 'syddjurs', 'BOOKINGS_STAGE')",
+                                "exportSettings": {
+                                    "type": "SnowflakeExportCopyCommand"
+                                }
+                            },
+                            "dataset": {
+                                "referenceName": "DS_SNOWFLAKE",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "database": "GOVTECH_DB",
+                                    "table": "1_RAW_SYDDJURS_BOOKINGS",
+                                    "schema": "RAW"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {}
+                },
+                "variables": {
+                    "start_date": {
+                        "type": "String"
+                    },
+                    "end_date": {
+                        "type": "String"
+                    }
+                },
+                "folder": {
+                    "name": "Bookings"
+                },
+                "annotations": [],
+                "lastPublishTime": "2023-10-02T09:25:14Z"
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/DS_SNOWFLAKE')]",
+                "[concat(variables('factoryId'), '/datasets/DS_BOOKINGS_SYDDJURS')]",
+                "[concat(variables('factoryId'), '/datasets/DS_BOOKINGS_SYDDJURS_BLOB')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DS_SNOWFLAKE')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "[parameters('LS_SNOWFLAKE')]",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "database": {
+                        "type": "string"
+                    },
+                    "table": {
+                        "type": "string"
+                    },
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "SnowflakeTable",
+                "schema": [],
+                "typeProperties": {}
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DS_BOOKINGS_SYDDJURS')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "[parameters('LS_BOOKINGS_SYDDJURS')]",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "start_date": {
+                        "type": "string"
+                    },
+                    "end_date": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "RestResource",
+                "typeProperties": {
+                    "relativeUrl": {
+                        "value": "@concat('bookings?organization=4927&from=', dataset().start_date,'&to=', dataset().end_date,'&resources=12034;10339;12032;39100')",
+                        "type": "Expression"
+                    }
+                },
+                "schema": []
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DS_BOOKINGS_SYDDJURS_BLOB')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "[parameters('LS_BLOB')]",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "year": {
+                        "type": "string"
+                    },
+                    "month": {
+                        "type": "string"
+                    },
+                    "day": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Json",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobStorageLocation",
+                        "fileName": {
+                            "value": "@concat(dataset().year,'/',dataset().month,'/',dataset().day, '.json')",
+                            "type": "Expression"
+                        },
+                        "folderPath": "syddjurs",
+                        "container": "bookings"
+                    }
+                },
+                "schema": {}
+            },
+            "dependsOn": []
+        }
+    ]
+}
