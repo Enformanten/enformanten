@@ -18,7 +18,6 @@ The architecture is therefore split into 2 parts:
 In the below diagram an overview of the general architecture can be seen.
 
 
-![Alt text](assets/architecture.png)
-
+![Alt text](assets/infrastructure.png)
 
 
