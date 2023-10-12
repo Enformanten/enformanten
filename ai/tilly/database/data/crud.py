@@ -20,12 +20,10 @@ def retrieve_data(session: Session, table: object) -> dict[str, pd.DataFrame]:
     """retrieve all timeslots using sqlalchemy"""
     logger.debug(f"Retrieving data from {table.__tablename__}")
 
-    query = session.query(table).statement
+    # query = session.query(table).statement
     # debug tools:
     # query = session.query(table).limit(5000).statement
-    # query = session.query(table).where(
-    #   table.school == "Thorsager Skole"
-    # ).statement
+    query = session.query(table).where(table.school == "Thorsager Skole").statement
 
     data = {
         school_room: df

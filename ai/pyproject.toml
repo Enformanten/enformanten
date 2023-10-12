@@ -40,6 +40,14 @@ matplotlib = "^3.7.2"
 pre-commit = "^3.3.3"
 httpx = "^0.25.0"
 pytest = "^7.4.2"
+fastapi-profiler = "^1.2.0"
+
+[tool.vulture]
+make_whitelist = true
+min_confidence = 100
+paths = ["tilly"]
+sort_by_size = true
+verbose = true
 
 [build-system]
 requires = ["poetry-core"]
