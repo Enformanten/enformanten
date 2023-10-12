@@ -3,6 +3,8 @@ import numpy as np
 from scipy.ndimage import gaussian_filter1d
 from loguru import logger
 
+from tilly.utils import log_pipeline
+
 
 class Preprocessor:
     """A class that contains all the preprocessing logic for the
@@ -37,6 +39,7 @@ class Preprocessor:
             return "auto"
 
     @classmethod
+    @log_pipeline
     def merge_dt(cls, df, date, time, name, sep=" "):
         return df.assign(
             **{
@@ -47,6 +50,7 @@ class Preprocessor:
         )
 
     @classmethod
+    @log_pipeline
     def add_missing_timeslots(cls, df: pd.DataFrame, freq: str = "15T") -> pd.DataFrame:
         """Adds the rows that are missing from the DataFrame, by merging
         it with a DataFrame containing all the timeslots."""
@@ -69,6 +73,7 @@ class Preprocessor:
         )
 
     @classmethod
+    @log_pipeline
     def interpolate_missing_islands(
         cls,
         df: pd.DataFrame,
@@ -108,6 +113,7 @@ class Preprocessor:
             )
 
     @classmethod
+    @log_pipeline
     def remove_stagnate_intervals(
         cls, df, target_col: str = "CO2", threshold=4
     ) -> pd.DataFrame:
@@ -129,6 +135,7 @@ class Preprocessor:
         )
 
     @classmethod
+    @log_pipeline
     def drop_outliers(
         cls, df, bounds: dict[str, tuple[float | None, float | None]]
     ) -> pd.DataFrame:
@@ -155,6 +162,7 @@ class Preprocessor:
         return df[mask]
 
     @classmethod
+    @log_pipeline
     def day_filter(cls, df: pd.DataFrame, *, min_ratio: float = 0.25) -> pd.DataFrame:
         """Filter out days with too few data points
         (days with less than min_ratio of the data points).
@@ -180,75 +188,58 @@ class Preprocessor:
     def calculate_kinematic_quantities(
         cls, df, metric, *, window, prefix=None
     ) -> pd.DataFrame:
-        """Add the rolling velocity, acceleration and jerk for a given metric.
-        The rolling quantities are calculated using the gradient of the metric and
-        the given window size. The resulting null values are filled with zeros"""
+        """Add rolling velocity, acceleration, and jerk for a metric.
+        The rolling quantities are calculated using the gradient of the
+        metric and the given window size. Null values are filled with zeros."""
 
         if prefix is None:
             prefix = metric
 
-        return df.assign(
-            **{
-                # First order derivative of the metric
-                f"{prefix}_velocity": lambda d: (
-                    d[metric].rolling(window=window).apply(lambda x: np.gradient(x)[-1])
-                ),
-                # Second order derivative of the metric
-                f"{prefix}_acceleration": lambda d: (
-                    d[f"{prefix}_velocity"]
-                    .rolling(window=window)
-                    .apply(lambda x: np.gradient(x)[-1])
-                ),
-                # Third order derivative of the metric
-                f"{prefix}_jerk": lambda d: (
-                    d[f"{prefix}_acceleration"]
-                    .rolling(window=window)
-                    .apply(lambda x: np.gradient(x)[-1])
-                ),
-                # Log of the metric - Useful for identifying
-                # natural diffusion of CO2 from the room
-                f"{prefix}_log": lambda d: (d[metric].fillna(0)),
-            }
-        ).assign(
-            **{
-                f"{prefix}_velocity": lambda d: (d[f"{prefix}_velocity"].fillna(0)),
-                f"{prefix}_acceleration": lambda d: (
-                    d[f"{prefix}_acceleration"].fillna(0)
-                ),
-                f"{prefix}_jerk": lambda d: (d[f"{prefix}_jerk"].fillna(0)),
-            }
-        )
+        # Calculate the rolling window mean for the metric
+        rolling_metric = df[metric].rolling(window=window).mean()
+
+        # First order derivative (velocity)
+        df[f"{prefix}_velocity"] = rolling_metric.diff()
+
+        # Second order derivative (acceleration)
+        df[f"{prefix}_acceleration"] = df[f"{prefix}_velocity"].diff()
+
+        # Third order derivative (jerk)
+        df[f"{prefix}_jerk"] = df[f"{prefix}_acceleration"].diff()
+
+        # Log of the metric
+        df[f"{prefix}_log"] = np.log(df[metric].fillna(1) + 1)
+
+        # Fill NAs
+        fill_cols = [f"{prefix}_velocity", f"{prefix}_acceleration", f"{prefix}_jerk"]
+        df[fill_cols] = df[fill_cols].fillna(0)
+
+        return df
 
     @classmethod
+    def gaussian_smooth(cls, df, metric, *, std_dev=2):
+        """Apply a gaussian filter to a given metric"""
+        df[f"{metric}_smoothed"] = gaussian_filter1d(df[metric], sigma=std_dev)
+        return df
+
+    @classmethod
+    @log_pipeline
     def apply_time_group_funcs(cls, df, funcs) -> pd.DataFrame:
         """Apply a list of functions to each time-contiguous
         block of data in the DataFrame"""
 
-        dataf = (
-            df
-            # Calculate time_diff and identify new blocks of time
-            .assign(time_diff=lambda d: d["DATETIME"].diff())
-            .assign(new_block=lambda d: d["time_diff"] > pd.Timedelta(minutes=15))
-            .assign(block_id=lambda d: d["new_block"].cumsum())
-        )
+        # Calculate all the needed columns in one go
+        df["time_diff"] = df["DATETIME"].diff()
+        df["new_block"] = df["time_diff"] > pd.Timedelta(minutes=15)
+        df["block_id"] = df["new_block"].cumsum()
+
         for func, kwargs in funcs:
-            dataf = (
-                dataf.groupby("block_id").apply(func, **kwargs).reset_index(drop=True)
-            )
-        return dataf.drop(columns=["block_id", "new_block", "time_diff"])
+            df = df.groupby("block_id").apply(func, **kwargs).reset_index(drop=True)
+        df.drop(columns=["block_id", "new_block", "time_diff"], inplace=True)
+        return df
 
     @classmethod
-    def gaussian_smooth(cls, df, metric, *, std_dev):
-        """Apply a gaussian filter to a given metric"""
-        return df.assign(
-            **{
-                f"{metric}_smoothed": lambda d: gaussian_filter1d(
-                    d[metric], sigma=std_dev
-                )
-            }
-        )
-
-    @classmethod
+    @log_pipeline
     def add_time_features(cls, df, *, night_start=23, night_end=6):
         """Add time features to the DataFrame"""
         return df.assign(
@@ -259,6 +250,7 @@ class Preprocessor:
         )
 
     @classmethod
+    @log_pipeline
     def featurize(cls, df: pd.DataFrame) -> pd.DataFrame:
         """Run the full preprocessing flow on a DataFrame"""
         return (
