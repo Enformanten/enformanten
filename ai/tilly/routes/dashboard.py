@@ -20,7 +20,6 @@ def read_root(request: Request) -> HTMLResponse:
 @router.get("/plots/{municipality}/{school}/{room}")
 def get_single_plot(municipality: str, school: str, room: str) -> dict:
     plot_path = c.PLOTS_DIR / municipality / school / f"{room}.html"
-    print(plot_path)
     if not plot_path.exists():
         raise HTTPException(status_code=404, detail="Plot not found")
     url_path = f"/static/plots/{municipality}/{school}/{room}.html"

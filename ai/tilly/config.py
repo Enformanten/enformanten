@@ -21,7 +21,6 @@ DB_ECHO = False
 TITLE = "Tilly API"
 DESCRIPTION = "Unsupervised anomaly detection for room usage"
 DEBUG = config("DEBUG", cast=bool, default=False)
-print(f"DEBUG: {DEBUG}")
 PLOTS_DIR = Path("tilly/dashboard/plots")
 
 
