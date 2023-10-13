@@ -1,0 +1,362 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "factoryName": {
+            "type": "string",
+            "metadata": "Data Factory name"
+        },
+        "LS_SNOWFLAKE": {
+            "type": "string"
+        },
+        "LS_IOT_SYDDJURS": {
+            "type": "string"
+        },
+        "LS_BLOB": {
+            "type": "string"
+        }
+    },
+    "variables": {
+        "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+    },
+    "resources": [
+        {
+            "name": "[concat(parameters('factoryName'), '/PL_IOT_SYDDJURS')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "description": "This pipeline fetches IoT Data from Syddjurs. It firstly gathers the config for the credentials to fetch an access token. After the token is obtained it looks up the last load date of IoT Data. It the proceeds to call the API for IoT Data from the last load date until today. Finally it updates the raw table in the database",
+                "activities": [
+                    {
+                        "name": "Get Config",
+                        "type": "WebActivity",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "0.12:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "url": "https://kv-govtech.vault.azure.net/secrets/syddjurs-iot-api?api-version=7.0",
+                            "method": "GET",
+                            "headers": {},
+                            "authentication": {
+                                "type": "MSI",
+                                "resource": "https://vault.azure.net"
+                            }
+                        }
+                    },
+                    {
+                        "name": "Get token",
+                        "type": "WebActivity",
+                        "dependsOn": [
+                            {
+                                "activity": "Get Config",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "timeout": "0.12:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "url": "https://syddjurs.emshost.dk/OmegaWeb/api/Authentication/Token",
+                            "method": "POST",
+                            "headers": {},
+                            "body": {
+                                "value": "@activity('Get Config').output.value",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    {
+                        "name": "Set token",
+                        "type": "SetVariable",
+                        "dependsOn": [
+                            {
+                                "activity": "Get token",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "variableName": "api-key",
+                            "value": {
+                                "value": "@activity('Get token').output.access_token",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    {
+                        "name": "UPDATE_RAW",
+                        "type": "Lookup",
+                        "dependsOn": [
+                            {
+                                "activity": "Get data",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "timeout": "0.12:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "source": {
+                                "type": "SnowflakeSource",
+                                "query": "CALL \"RAW\".RAWLOADDATA('GOVTECH_DB', 'RAW', '1_RAW_SYDDJURS_IOT_VALUES', 'syddjurs', 'IOT_STAGE')",
+                                "exportSettings": {
+                                    "type": "SnowflakeExportCopyCommand"
+                                }
+                            },
+                            "dataset": {
+                                "referenceName": "DS_SNOWFLAKE",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "database": "GOVTECH_DB",
+                                    "table": "1_RAW_SYDDJURS_IOT_VALUES",
+                                    "schema": "RAW"
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "name": "Get data",
+                        "type": "Copy",
+                        "dependsOn": [
+                            {
+                                "activity": "Get LAST_LOAD_DATE",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "timeout": "0.12:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "source": {
+                                "type": "RestSource",
+                                "httpRequestTimeout": "00:05:00",
+                                "requestInterval": "00.00:00:00.010",
+                                "requestMethod": "POST",
+                                "requestBody": {
+                                    "value": "@string(json(concat('{\n  \"From\":\"', formatDateTime(activity('Get LAST_LOAD_DATE').output.firstRow.DATE, 'yyyy-MM-ddT00:mm:ss'),'+01:00\",\n  \"To\":\"', formatDateTime(utcnow(), 'yyyy-MM-ddThh:mm:ss'),'+01:00\",\n  \"Period\": 7,\n  \"Flag\": 0\n}')))",
+                                    "type": "Expression"
+                                },
+                                "additionalHeaders": {
+                                    "Authorization": {
+                                        "value": "@concat('Bearer ', variables('api-key'))",
+                                        "type": "Expression"
+                                    },
+                                    "Content-Type": "application/json"
+                                }
+                            },
+                            "sink": {
+                                "type": "JsonSink",
+                                "storeSettings": {
+                                    "type": "AzureBlobStorageWriteSettings"
+                                },
+                                "formatSettings": {
+                                    "type": "JsonWriteSettings"
+                                }
+                            },
+                            "enableStaging": false
+                        },
+                        "inputs": [
+                            {
+                                "referenceName": "DS_IOT_SYDDJURS",
+                                "type": "DatasetReference",
+                                "parameters": {}
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "referenceName": "DS_IOT_SYDDJURS_BLOB",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "year": {
+                                        "value": "@formatDateTime(activity('Get LAST_LOAD_DATE').output.firstRow.DATE, 'yyyy')",
+                                        "type": "Expression"
+                                    },
+                                    "month": {
+                                        "value": "@formatDateTime(activity('Get LAST_LOAD_DATE').output.firstRow.DATE, 'MM')",
+                                        "type": "Expression"
+                                    },
+                                    "day": {
+                                        "value": "@formatDateTime(activity('Get LAST_LOAD_DATE').output.firstRow.DATE, 'dd')",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Get LAST_LOAD_DATE",
+                        "type": "Lookup",
+                        "dependsOn": [
+                            {
+                                "activity": "Set token",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "timeout": "0.12:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "source": {
+                                "type": "SnowflakeSource",
+                                "query": {
+                                    "value": "select max(DATE::DATE)::Date as date from \"GOVTECH_DB\".\"RAW\".\"3_CLEANSED_SYDDJURS_IOT\"",
+                                    "type": "Expression"
+                                },
+                                "exportSettings": {
+                                    "type": "SnowflakeExportCopyCommand"
+                                }
+                            },
+                            "dataset": {
+                                "referenceName": "DS_SNOWFLAKE",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "database": "GOVTECH_DB",
+                                    "table": "3_CLEANSED_SYDDJURS_IOT",
+                                    "schema": "RAW"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {}
+                },
+                "variables": {
+                    "api-key": {
+                        "type": "String"
+                    }
+                },
+                "folder": {
+                    "name": "IoT"
+                },
+                "annotations": [],
+                "lastPublishTime": "2023-10-02T09:25:14Z"
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/DS_SNOWFLAKE')]",
+                "[concat(variables('factoryId'), '/datasets/DS_IOT_SYDDJURS')]",
+                "[concat(variables('factoryId'), '/datasets/DS_IOT_SYDDJURS_BLOB')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DS_SNOWFLAKE')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "[parameters('LS_SNOWFLAKE')]",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "database": {
+                        "type": "string"
+                    },
+                    "table": {
+                        "type": "string"
+                    },
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "SnowflakeTable",
+                "schema": [],
+                "typeProperties": {}
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DS_IOT_SYDDJURS')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "[parameters('LS_IOT_SYDDJURS')]",
+                    "type": "LinkedServiceReference"
+                },
+                "annotations": [],
+                "type": "RestResource",
+                "typeProperties": {},
+                "schema": []
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DS_IOT_SYDDJURS_BLOB')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "[parameters('LS_BLOB')]",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "year": {
+                        "type": "string"
+                    },
+                    "month": {
+                        "type": "string"
+                    },
+                    "day": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Json",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobStorageLocation",
+                        "fileName": {
+                            "value": "@concat(dataset().year,'/',dataset().month,'/',dataset().day, '.json')",
+                            "type": "Expression"
+                        },
+                        "folderPath": "syddjurs",
+                        "container": "iot-data"
+                    }
+                },
+                "schema": {}
+            },
+            "dependsOn": []
+        }
+    ]
+}

@@ -1,0 +1,461 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "factoryName": {
+            "type": "string",
+            "metadata": "Data Factory name"
+        },
+        "LS_BLOB": {
+            "type": "string"
+        },
+        "LS_SNOWFLAKE": {
+            "type": "string"
+        },
+        "LS_FAVRSKOV_BOOKING_API": {
+            "type": "string"
+        }
+    },
+    "variables": {
+        "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+    },
+    "resources": [
+        {
+            "name": "[concat(parameters('factoryName'), '/PL_BOOKINGS_FAVRSKOV')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "description": "This pipeline fetches the last load date from the database of bookings and creates an array of days between last loaded and 30 days ahead. It then calls the Favrskov Booking API day-for-day and puts in the designated storage container. Finally, it triggers the update of the raw table in Snowflake by a stored procedure.",
+                "activities": [
+                    {
+                        "name": "Get LAST_LOAD_DATE",
+                        "type": "Lookup",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "0.12:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "source": {
+                                "type": "SnowflakeSource",
+                                "query": "select max(dato::DATE)::Date as date from \"GOVTECH_DB\".\"RAW\".\"3_CLEANSED_FAVRSKOV_BOOKINGS\";",
+                                "exportSettings": {
+                                    "type": "SnowflakeExportCopyCommand"
+                                }
+                            },
+                            "dataset": {
+                                "referenceName": "DS_SNOWFLAKE",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "database": "GOVTECH_DB",
+                                    "table": "3_CLEANSED_FAVRSKOV_BOOKINGS",
+                                    "schema": "RAW"
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "name": "Set start date",
+                        "type": "SetVariable",
+                        "dependsOn": [
+                            {
+                                "activity": "Get LAST_LOAD_DATE",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "variableName": "start_date",
+                            "value": {
+                                "value": "@utcNow()",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    {
+                        "name": "Set number of days",
+                        "type": "SetVariable",
+                        "dependsOn": [
+                            {
+                                "activity": "Set start date",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            },
+                            {
+                                "activity": "Set end date",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "variableName": "days",
+                            "value": {
+                                "value": "@string(add(div(sub(ticks(variables('end_date')),ticks(variables('start_date'))),864000000000), 1))",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    {
+                        "name": "Set days array",
+                        "type": "SetVariable",
+                        "dependsOn": [
+                            {
+                                "activity": "Set number of days",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "variableName": "days_array",
+                            "value": {
+                                "value": "@range(0, sub(int(variables('days')),1))",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    {
+                        "name": "Loop through dates",
+                        "type": "ForEach",
+                        "dependsOn": [
+                            {
+                                "activity": "Set days array",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "userProperties": [],
+                        "typeProperties": {
+                            "items": {
+                                "value": "@variables('days_array')",
+                                "type": "Expression"
+                            },
+                            "isSequential": true,
+                            "activities": [
+                                {
+                                    "name": "Get Bookings",
+                                    "type": "Copy",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "Set date",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "source": {
+                                            "type": "RestSource",
+                                            "httpRequestTimeout": "00:01:40",
+                                            "requestInterval": "00.00:00:00.010",
+                                            "requestMethod": "GET",
+                                            "paginationRules": {
+                                                "supportRFC5988": "true"
+                                            }
+                                        },
+                                        "sink": {
+                                            "type": "JsonSink",
+                                            "storeSettings": {
+                                                "type": "AzureBlobStorageWriteSettings",
+                                                "maxConcurrentConnections": 2
+                                            },
+                                            "formatSettings": {
+                                                "type": "JsonWriteSettings"
+                                            }
+                                        },
+                                        "enableStaging": true,
+                                        "stagingSettings": {
+                                            "linkedServiceName": {
+                                                "referenceName": "[parameters('LS_BLOB')]",
+                                                "type": "LinkedServiceReference"
+                                            },
+                                            "path": "bookings/favrskov"
+                                        }
+                                    },
+                                    "inputs": [
+                                        {
+                                            "referenceName": "DS_FAVRSKOV_BOOKING_API",
+                                            "type": "DatasetReference",
+                                            "parameters": {
+                                                "year": {
+                                                    "value": "@formatDateTime(variables('current_load_date'), 'yyyy')",
+                                                    "type": "Expression"
+                                                },
+                                                "month": {
+                                                    "value": "@formatDateTime(variables('current_load_date'), 'MM')",
+                                                    "type": "Expression"
+                                                },
+                                                "day": {
+                                                    "value": "@formatDateTime(variables('current_load_date'), 'dd')",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "outputs": [
+                                        {
+                                            "referenceName": "DS_BOOKINGS_FAVRSKOV_BLOB",
+                                            "type": "DatasetReference",
+                                            "parameters": {
+                                                "year": {
+                                                    "value": "@formatDateTime(variables('start_date'), 'yyyy')",
+                                                    "type": "Expression"
+                                                },
+                                                "month": {
+                                                    "value": "@formatDateTime(variables('start_date'), 'MM')",
+                                                    "type": "Expression"
+                                                },
+                                                "day": {
+                                                    "value": "@concat(formatDateTime(variables('start_date'), 'dd'), '/', formatDateTime(variables('current_load_date'), 'yyyy-MM-dd'))",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "name": "Set date",
+                                    "type": "SetVariable",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "current_load_date",
+                                        "value": {
+                                            "value": "@addDays(variables('start_date'), item())",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "UPDATE_RAW",
+                        "type": "Lookup",
+                        "dependsOn": [
+                            {
+                                "activity": "Loop through dates",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "timeout": "0.12:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "source": {
+                                "type": "SnowflakeSource",
+                                "query": "CALL \"RAW\".RAWLOADDATA('GOVTECH_DB', 'RAW', '1_RAW_FAVRSKOV_BOOKINGS', 'favrskov', 'BOOKINGS_STAGE')",
+                                "exportSettings": {
+                                    "type": "SnowflakeExportCopyCommand"
+                                }
+                            },
+                            "dataset": {
+                                "referenceName": "DS_SNOWFLAKE",
+                                "type": "DatasetReference",
+                                "parameters": {
+                                    "database": "GOVTECH_DB",
+                                    "table": "1_RAW_FAVRSKOV_BOOKINGS",
+                                    "schema": "RAW"
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "name": "Set end date",
+                        "type": "SetVariable",
+                        "dependsOn": [
+                            {
+                                "activity": "Get LAST_LOAD_DATE",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "variableName": "end_date",
+                            "value": {
+                                "value": "@addDays(utcNow(), 30)",
+                                "type": "Expression"
+                            }
+                        }
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {}
+                },
+                "variables": {
+                    "start_date": {
+                        "type": "String"
+                    },
+                    "days": {
+                        "type": "String"
+                    },
+                    "days_array": {
+                        "type": "Array"
+                    },
+                    "current_load_date": {
+                        "type": "String"
+                    },
+                    "end_date": {
+                        "type": "String"
+                    }
+                },
+                "folder": {
+                    "name": "Bookings"
+                },
+                "annotations": [
+                    "Bookings"
+                ],
+                "lastPublishTime": "2023-10-02T09:25:14Z"
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/DS_SNOWFLAKE')]",
+                "[concat(variables('factoryId'), '/datasets/DS_FAVRSKOV_BOOKING_API')]",
+                "[concat(variables('factoryId'), '/datasets/DS_BOOKINGS_FAVRSKOV_BLOB')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DS_SNOWFLAKE')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "[parameters('LS_SNOWFLAKE')]",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "database": {
+                        "type": "string"
+                    },
+                    "table": {
+                        "type": "string"
+                    },
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "SnowflakeTable",
+                "schema": [],
+                "typeProperties": {}
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DS_FAVRSKOV_BOOKING_API')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "[parameters('LS_FAVRSKOV_BOOKING_API')]",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "year": {
+                        "type": "string"
+                    },
+                    "month": {
+                        "type": "string"
+                    },
+                    "day": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "RestResource",
+                "typeProperties": {
+                    "relativeUrl": {
+                        "value": "@concat('?gruppe=30&&year=',dataset().year,'&month=',dataset().month,'&day=',dataset().day,'&type=json')",
+                        "type": "Expression"
+                    }
+                },
+                "schema": []
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DS_BOOKINGS_FAVRSKOV_BLOB')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "[parameters('LS_BLOB')]",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "year": {
+                        "type": "string"
+                    },
+                    "month": {
+                        "type": "string"
+                    },
+                    "day": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Json",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobStorageLocation",
+                        "fileName": {
+                            "value": "@concat(dataset().year,'/',dataset().month,'/',dataset().day, '.json')",
+                            "type": "Expression"
+                        },
+                        "folderPath": "favrskov",
+                        "container": "bookings"
+                    }
+                },
+                "schema": {}
+            },
+            "dependsOn": []
+        }
+    ]
+}
