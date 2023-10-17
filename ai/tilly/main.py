@@ -26,7 +26,7 @@ async def on_startup():
     await create_initial_users()
 
 
-app.mount("/static", StaticFiles(directory="tilly/dashboard"), name="static")
+app.mount("/dashboard", StaticFiles(directory="tilly/dashboard/"), name="plots")
 
 app.include_router(
     dashboard.router,
