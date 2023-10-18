@@ -1,8 +1,8 @@
 from pathlib import Path
-from fastapi import APIRouter, Request
+from typing import Optional, Dict
+from fastapi import APIRouter, Request, HTTPException
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
-from fastapi import HTTPException
 
 from tilly import config as c
 
@@ -17,30 +17,16 @@ def read_root(request: Request) -> HTMLResponse:
     return templates.TemplateResponse("dashboard.html", {"request": request})
 
 
-@router.get("/plots/{municipality}/{school}/{room}")
-def get_single_plot(municipality: str, school: str, room: str) -> dict:
-    plot_path = c.PLOTS_DIR / municipality / school / f"{room}.html"
-    if not plot_path.exists():
-        raise HTTPException(status_code=404, detail="Plot not found")
-    url_path = f"/static/plots/{municipality}/{school}/{room}.html"
-    return {"path": url_path}
+def create_plot_structure(root_path: Path) -> Optional[Dict]:
+    if not root_path.is_dir():
+        return None
+    return {child.name: create_plot_structure(child) for child in root_path.iterdir()}
 
 
-@router.get("/get_structure/")
-async def get_structure():
-    root_path = Path("tilly/dashboard/plots/")
-    structure = {}
-
-    for html_file in root_path.glob("**/*.html"):
-        parts = html_file.relative_to(root_path).parts
-        municipality, school, room = parts
-
-        if municipality not in structure:
-            structure[municipality] = {}
-        if school not in structure[municipality]:
-            structure[municipality][school] = []
-
-        room_name = room.replace(".html", "")
-        structure[municipality][school].append(room_name)
-
-    return structure
+@router.get("/plots_structure", response_model=Optional[Dict])
+def get_plots_structure():
+    plot_dir = Path(c.PLOTS_DIR)  # Assume PLOTS_DIR is defined in your config
+    result = create_plot_structure(plot_dir)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Invalid directory structure")
+    return result

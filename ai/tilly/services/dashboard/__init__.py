@@ -34,9 +34,7 @@ def process_for_dashboard(rooms: dict[str, pd.DataFrame]) -> dict[str, pd.DataFr
     """Processes the results for the dashboard."""
 
     output = {}
-    for name, room in rooms.items():
-        # logger.debug(f"Creating plot for room: {name}")
-
+    for _, room in rooms.items():
         # retrive the first instance of 'KOMMUNE' and 'SKOLE'
         municipality = room["KOMMUNE"].iloc[0]
         school = room["SKOLE"].iloc[0]
@@ -57,6 +55,16 @@ def process_for_dashboard(rooms: dict[str, pd.DataFrame]) -> dict[str, pd.DataFr
             hover_data=room[hover_features],
         )
         fig.update_traces(dict(marker_line_width=0))
+        fig.update_layout(legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01))
+        fig.update_layout(
+            legend=dict(
+                yanchor="top",
+                y=0.99,
+                xanchor="left",
+                x=0.01,
+                title=None,
+            )
+        )
         output[(municipality, school, room_id)] = fig
 
     return output

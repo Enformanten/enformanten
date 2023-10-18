@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Performance Overview</title>
-    <link rel="stylesheet" type="text/css" href="/static/styles.css">
+    <link rel="stylesheet" type="text/css" href="/dashboard/styles.css">
 </head>
 <body>
     <div class="header">
@@ -24,160 +24,100 @@
     </div>
 
     <script>
-        
-        var currentMunicipalityIndex = 0;
-        var currentSchoolIndex = 0;
-        var currentRoomIndex = 0;
-        var plots = null;
+        let plotData = {};
+        let curMunicipality = 0, curSchool = 0, curRoom = 0;
+        let municipalities = [], schools = [], rooms = [];
 
-        var currentMunicipality;
-        var currentSchool;
-        var currentRoom;
+        const updateSchool = (direction) => {
+            if (!schools || !schools.length) return;
 
-        const iframeContainer = document.querySelector('.iframe-container');
-
-        const clearIframes = (container) => {
-            container.innerHTML = '';
-        };
-
-        const fetchPlotStructure = async () => {
-            try {
-                if (!plots) { 
-                    const response = await fetch('/get_structure/');
-                    plots = await response.json();
+            let numSchools = schools.length;
+            if (direction === 'next') {
+                curSchool++;
+                if (curSchool >= numSchools) {
+                    curSchool = 0;
+                    curMunicipality = (curMunicipality + 1) % municipalities.length;
+                    schools = Object.keys(plotData[municipalities[curMunicipality]]);
                 }
-            } catch (error) {
-                console.error("An error occurred while fetching the plot structure:", error);
-            }
-        };
-
-        const fetchSinglePlot = async () => {
-            try {
-                const response = await fetch(`/plots/${currentMunicipality}/${currentSchool}/${currentRoom}`);
-                return await response.json();
-            } catch (error) {
-                console.error("An error occurred while fetching plot:", error);
-            }
-        };
-
-        const updateSingleIframe = async () => {
-            try {
-                clearIframes(iframeContainer);
-                const data = await fetchSinglePlot();
-                const iframe = document.createElement('iframe');
-                iframe.src = data.path;
-                iframeContainer.appendChild(iframe);
-                
-                updateCurrentInfo(); // Call the new function here
-            } catch (error) {
-                console.error("An error occurred while fetching a single plot:", error);
-            }
-        };
-
-
-        const initializeDashboard = async () => {
-            await fetchPlotStructure();
-            
-            console.log('Initializing dashboard');
-            console.log('Current municipality:', currentMunicipality);
-            const municipalities = Object.keys(plots);
-            currentMunicipality = municipalities[currentMunicipalityIndex];
-            currentSchool = Object.keys(plots[currentMunicipality])[currentSchoolIndex];
-            currentRoom = plots[currentMunicipality][currentSchool][currentRoomIndex];
-
-            updateSingleIframe();
-        };
-
-        const prevSchool = () => {
-            // Logic for switching the previous municipality
-            currentMunicipalityIndex--;
-            if (currentMunicipalityIndex < 0) {
-                currentMunicipalityIndex = 0; // or loop back to the last municipality
-            }
-            currentMunicipality = Object.keys(plots)[currentMunicipalityIndex];
-            currentSchool = Object.keys(plots[currentMunicipality])[0];  // Assume the first school
-            currentRoomIndex = 0; // Reset to the first room
-            updateSingleIframe();
-        };
-
-        const nextSchool = () => {
-            // Logic for switching the next municipality
-            currentMunicipalityIndex++;
-            if (currentMunicipalityIndex >= Object.keys(plots).length) {
-                currentMunicipalityIndex = Object.keys(plots).length - 1; // or loop back to the first municipality
-            }
-            currentMunicipality = Object.keys(plots)[currentMunicipalityIndex];
-            currentSchool = Object.keys(plots[currentMunicipality])[0];  // Assume the first school
-            currentRoomIndex = 0; // Reset to the first room
-            updateSingleIframe();
-        };
-
-
-        const prevRoom = () => {
-            // Logic for showing the previous room
-            currentRoomIndex--;
-            
-            if (currentRoomIndex < 0) {
-                // Move to the previous municipality
-                currentMunicipalityIndex--;
-                
-                if (currentMunicipalityIndex < 0) {
-                    currentMunicipalityIndex = Object.keys(plots).length - 1;  // Loop back to the last municipality
+            } else {
+                curSchool--;
+                if (curSchool < 0) {
+                    curMunicipality = (curMunicipality - 1 + municipalities.length) % municipalities.length;
+                    schools = Object.keys(plotData[municipalities[curMunicipality]]);
+                    curSchool = schools.length - 1;
                 }
-                
-                currentMunicipality = Object.keys(plots)[currentMunicipalityIndex];
-                currentSchool = Object.keys(plots[currentMunicipality])[0];  // Assume the first school
-                
-                // Set currentRoomIndex to the last room of the new current school
-                currentRoomIndex = plots[currentMunicipality][currentSchool].length - 1;
-            }
-            
-            updateSingleIframe();
-        };
-
-        const nextRoom = () => {
-            // Logic for showing the next room
-            currentRoomIndex++;
-            
-            const maxRooms = plots[currentMunicipality][currentSchool].length;
-            
-            if (currentRoomIndex >= maxRooms) {
-                // Reset room index and switch to the next municipality
-                currentRoomIndex = 0;
-
-                currentMunicipalityIndex++;
-                
-                if (currentMunicipalityIndex >= Object.keys(plots).length) {
-                    currentMunicipalityIndex = 0; // Loop back to the first municipality if you're at the end
-                }
-                
-                currentMunicipality = Object.keys(plots)[currentMunicipalityIndex];
-                currentSchool = Object.keys(plots[currentMunicipality])[0];  // Assume the first school
             }
 
-            updateSingleIframe();
+            rooms = Object.keys(plotData[municipalities[curMunicipality]][schools[curSchool]]);
+            curRoom = 0;
         };
 
-        const updateCurrentInfo = () => {
-            const infoElement = document.getElementById('currentInfo');
-            const numRooms = plots[currentMunicipality][currentSchool].length;
-            infoElement.innerHTML = `Current Municipality: ${currentMunicipality} | School: ${currentSchool} | Room: ${currentRoom} (Room ${currentRoomIndex + 1}/${numRooms})`;
+        const updateRoom = (direction) => {
+            if (!rooms || !rooms.length) return;
+
+            if (direction === 'next') {
+                curRoom = (curRoom + 1) % rooms.length;
+            } else {
+                curRoom = (curRoom - 1 + rooms.length) % rooms.length;
+            }
         };
 
+        const updateIframe = () => {
+            const municipalityName = municipalities[curMunicipality];
+            const schoolName = schools[curSchool];
+            let roomName = rooms[curRoom];
+            const plotPath = `dashboard/plots/${municipalityName}/${schoolName}/${roomName}`;
+            const roomNameCleaned = rooms[curRoom].replace('.html', '')
+            document.getElementById("currentInfo").innerHTML = `Showing room ${roomNameCleaned} in ${schoolName} (${municipalityName} Kommune)`;
 
-        // ... (your other button-click logic, prevRoom, nextRoom, prevSchool, nextSchool)
 
-        // Bind next and previous school button click events
-        document.querySelector('#prevSchool').addEventListener('click', prevSchool);
-        document.querySelector('#nextSchool').addEventListener('click', nextSchool);
-        // Bind next and previous room button click events
-        document.querySelector('#prevRoom').addEventListener('click', prevRoom);
-        document.querySelector('#nextRoom').addEventListener('click', nextRoom);
-        
-        // Initialize dashboard upon window load
-        document.addEventListener("DOMContentLoaded", function(event) {
-            window.addEventListener('load', initializeDashboard);
+            let iframeElement = document.querySelector('.iframe-container iframe');
+            
+            if (!iframeElement) {
+                iframeElement = document.createElement('iframe');
+                iframeElement.width = '600';
+                iframeElement.height = '400';
+                document.querySelector('.iframe-container').appendChild(iframeElement);
+            }
+            
+            iframeElement.src = plotPath;
+        };
+
+        document.getElementById("nextRoom").addEventListener('click', () => {
+            updateRoom('next');
+            updateIframe();
         });
+
+        document.getElementById("prevRoom").addEventListener('click', () => {
+            updateRoom('prev');
+            updateIframe();
+        });
+
+        document.getElementById("nextSchool").addEventListener('click', () => {
+            updateSchool('next');
+            updateIframe();
+        });
+
+        document.getElementById("prevSchool").addEventListener('click', () => {
+            updateSchool('prev');
+            updateIframe();
+        });
+
+        fetch("/plots_structure")
+        .then(r => r.json())
+        .then(data => {
+            if (!data || Object.keys(data).length === 0 || data['error']) {
+                console.error("Invalid plot data received from server:", data);
+                return;
+            }
+            plotData = data;
+            municipalities = Object.keys(plotData);
+            schools = Object.keys(plotData[municipalities[curMunicipality]]);
+            rooms = Object.keys(plotData[municipalities[curMunicipality]][schools[curSchool]]);
+            updateIframe();
+        })
+        .catch(e => console.error(e));
+
     </script>
 </body>
 </html>
