@@ -72,8 +72,8 @@ jobs:
         file: ./ai/Dockerfile
         build-args: |
             GIT_METADATA=${{ needs.metadata.outputs.git_metadata }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+        # cache-from: type=gha
+        # cache-to: type=gha,mode=max
 
   deploy:
     runs-on: ubuntu-latest
