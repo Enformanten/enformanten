@@ -50,6 +50,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Debugging - List ai directory contents
+      run: ls -al ./ai
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
@@ -63,13 +66,14 @@ jobs:
     - name: Build and push container image to registry
       uses: docker/build-push-action@v5
       with:
+        context: ./ai
         push: true
         tags: ${{ env.AZ_IMAGE_TAG }}
         file: ./ai/Dockerfile
         build-args: |
             GIT_METADATA=${{ needs.metadata.outputs.git_metadata }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+        # cache-from: type=gha
+        # cache-to: type=gha,mode=max
 
   deploy:
     runs-on: ubuntu-latest
@@ -102,34 +106,8 @@ jobs:
     - name: Ping Endpoint
       uses: shahnozaAI/ping-url@v1.0.8
       with:
-        url: ${{ needs.deploy.outputs.url }}/heartbeat
+        url: ${{ needs.deploy.outputs.url }}/heartbeat/
         response_field: 'version'
         response_value: ${{ needs.metadata.outputs.git_metadata }}
         interval: '30'
         timeout: '900'
-
-#   test:
-#     runs-on: ubuntu-latest
-#     needs: [deploy,ping]
-
-#     steps:
-
-#       - name: Checkout code
-#         uses: actions/checkout@v4
-#         with:
-#           sparse-checkout: tests/integration_tests
-
-#       - name: Set up Python
-#         uses: actions/setup-python@v4
-#         with:
-#           python-version: '3.10'
-
-#       - name: Install dependencies
-#         run: pip install httpx pytest python-decouple
-
-#       - name: Run tests
-#         run: pytest tests/integration_tests
-#         env:
-#           URL: ${{ needs.deploy.outputs.url }}
-#           LOGIN_NAME: ${{ env.LOGIN_NAME }}
-#           LOGIN_PASSWORD: ${{ env.LOGIN_PASSWORD }}
