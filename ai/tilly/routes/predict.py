@@ -24,7 +24,7 @@ def prediction_flow(session, model):
     rooms: dict[str, DataFrame] = crud.retrieve_data(session, UnscoredTimeslots)
     scored_rooms: dict[str, DataFrame] = model.predict(rooms)
     combined_rooms: DataFrame = Transformer.combine_frames(rooms, scored_rooms)
-    return crud.push_data(combined_rooms)
+    return crud.push_data(combined_rooms, session)
 
 
 router = APIRouter()

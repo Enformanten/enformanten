@@ -5,10 +5,11 @@ a connection to a Snowflake database using SQLAlchemy.
 """
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session
 from typing import Generator
 
 from tilly.config import SNOWFLAKE_CREDENTIALS, DB_ECHO
+
 
 # Define your Snowflake connection parameters
 SNOWFLAKE_URL = (
@@ -17,8 +18,11 @@ SNOWFLAKE_URL = (
 ).format(**SNOWFLAKE_CREDENTIALS)
 
 # Create a synchronous engine
-engine = create_engine(SNOWFLAKE_URL, echo=DB_ECHO, future=True)
-Session = sessionmaker(bind=engine)
+engine = create_engine(
+    SNOWFLAKE_URL,
+    echo=DB_ECHO,
+    future=True,
+)
 
 
 def get_session() -> Generator[Session, None, None]:
@@ -37,5 +41,5 @@ def get_session() -> Generator[Session, None, None]:
     # The session is automatically closed when the 'with' block is exited.
     ```
     """
-    with Session() as session:
+    with Session(engine) as session:
         yield session

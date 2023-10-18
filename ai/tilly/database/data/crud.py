@@ -1,63 +1,15 @@
 """
 Data-related CRUD operations. Everything that deals with IO
 to the data pipelines of Enformanten.
-
-Author: [Your Name]
-Date: [Date]
 """
 
 from loguru import logger
 from sqlalchemy.orm import Session
 import pandas as pd
-from snowflake.connector.pandas_tools import write_pandas
-from snowflake.connector import connect, SnowflakeConnection
+from snowflake.connector.pandas_tools import pd_writer
 
-from tilly.config import SCORED_TABLE_NAME, SNOWFLAKE_CREDENTIALS, OUTPUT_COLUMNS
-
-
-def get_snowflake_conn() -> SnowflakeConnection:
-    """
-    Connect to Snowflake using the credentials in the config file.
-
-    Returns:
-        SnowflakeConnection: A connection to the Snowflake database.
-
-    Example:
-    ```python
-    # Get a Snowflake connection
-    conn = get_snowflake_conn()
-
-    # Use the connection for database operations
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM your_table")
-    result = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    ```
-    """
-    return connect(**SNOWFLAKE_CREDENTIALS)
-
-
-def log_size(df) -> pd.DataFrame:
-    """
-    Pandas pipe function to log:
-    - The size of the dataframe / number of retrieved rows.
-    - The number of unique rooms in the dataframe.
-
-    Args:
-        df (pd.DataFrame): The dataframe to log.
-
-    Returns:
-        pd.DataFrame: The dataframe.
-
-    Example:
-    ```python
-    # Apply the log_size function to a DataFrame
-    df = df.pipe(log_size)
-    ```
-    """
-    logger.info(f"Retrieved {len(df)} rows | {df.SKOLE_ID.nunique()} rooms")
-    return df
+from tilly.utils.logger import log_size
+from tilly.config import SCORED_TABLE_NAME, OUTPUT_COLUMNS
 
 
 def retrieve_data(session: Session, table: object) -> dict[str, pd.DataFrame]:
@@ -107,10 +59,9 @@ def retrieve_data(session: Session, table: object) -> dict[str, pd.DataFrame]:
     """
     logger.debug(f"Retrieving data from {table.__tablename__}")
 
-    # query = session.query(table).statement
     # debug tools:
-    # query = session.query(table).limit(5000).statement
-    query = session.query(table).statement
+    query = session.query(table).limit(1000).statement
+    # query = session.query(table).statement
 
     data = {
         school_room: df
@@ -125,7 +76,9 @@ def retrieve_data(session: Session, table: object) -> dict[str, pd.DataFrame]:
     return data
 
 
-def push_data(rooms: pd.DataFrame, table: object | str = SCORED_TABLE_NAME) -> None:
+def push_data(
+    rooms: pd.DataFrame, session: Session, table: object | str = SCORED_TABLE_NAME
+) -> None:
     """
     Send data to a specified Snowflake table using the
     provided DataFrame.
@@ -162,7 +115,10 @@ def push_data(rooms: pd.DataFrame, table: object | str = SCORED_TABLE_NAME) -> N
     """
     logger.debug(f"Sending data to {table} ..")
 
-    conn = get_snowflake_conn()
-    response, *_ = write_pandas(conn=conn, df=rooms[OUTPUT_COLUMNS], table_name=table)
-    conn.close()
-    return response
+    rooms[OUTPUT_COLUMNS].to_sql(
+        table,
+        session.bind,
+        method=pd_writer,
+        if_exists="append",
+        index=False,
+    )
