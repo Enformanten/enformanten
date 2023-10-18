@@ -144,29 +144,3 @@ jobs:
         response_value: ${{ needs.metadata.outputs.git_metadata }}
         interval: '30'
         timeout: '900'
-
-  # test:
-  #   runs-on: ubuntu-latest
-  #   needs: [deploy,ping]
-
-  #   steps:
-
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
-  #       with:
-  #         sparse-checkout: tests/integration_tests
-
-  #     - name: Set up Python
-  #       uses: actions/setup-python@v4
-  #       with:
-  #         python-version: '3.10'
-
-  #     - name: Install dependencies
-  #       run: pip install httpx pytest python-decouple
-
-  #     - name: Run tests
-  #       run: pytest tests/integration_tests
-  #       env:
-  #         URL: ${{ needs.deploy.outputs.url }}
-  #         LOGIN_NAME: ${{ env.LOGIN_NAME }}
-  #         LOGIN_PASSWORD: ${{ env.LOGIN_PASSWORD }}

@@ -2,26 +2,15 @@ from pathlib import Path
 import pandas as pd
 import warnings
 
-# from loguru import logger
-
 from tilly.config import PLOTS_DIR, FEATURES
 
 
+# Configure Pandas plotting backend
 pd.options.plotting.backend = "plotly"
-
+# Ignore FutureWarnings from Plotly
 warnings.filterwarnings(
     "ignore", category=FutureWarning, module="_plotly_utils.basevalidators"
 )
-
-
-def load_files(path: str) -> list[str]:
-    """Load all files from the given path."""
-
-    plots = []
-    for file in Path(path).glob("**/*.html"):
-        plots.append(file.read_text())  # append html content
-
-    return plots
 
 
 def create_dir(municipality: str, school: str) -> None:
@@ -42,20 +31,17 @@ def process_for_dashboard(rooms: dict[str, pd.DataFrame]) -> dict[str, pd.DataFr
 
         create_dir(municipality, school)
 
-        hover_features = FEATURES + ["ANOMALY_SCORE"]
         fig = room.sort_values("DATETIME", ascending=True).plot.bar(
             x="DATETIME",
             y="CO2",
             color="IN_USE",
-            title=(
-                f"Anvendelsesmodel - Lokale '{room_id}' "
-                + f"- {school} ({municipality} KOMMUNE)"
-            ),
-            width=3000,
-            hover_data=room[hover_features],
+            title=(f"Lokale {room_id} " + f"- {school} ({municipality} KOMMUNE)"),
+            width=2000,
+            hover_data=room[FEATURES + ["ANOMALY_SCORE"]],
         )
+        # Update bar border width
         fig.update_traces(dict(marker_line_width=0))
-        fig.update_layout(legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01))
+        # Update legend position
         fig.update_layout(
             legend=dict(
                 yanchor="top",

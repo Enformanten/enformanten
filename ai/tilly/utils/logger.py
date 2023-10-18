@@ -3,6 +3,7 @@ import logging
 from rich.logging import RichHandler
 from typing import Callable
 from functools import wraps
+import pandas as pd
 
 from tilly.config import DEBUG
 
@@ -37,3 +38,25 @@ def log_pipeline(function: Callable, verbose=DEBUG) -> Callable:
         return result
 
     return wrapper
+
+
+def log_size(df, unique="SKOLE_ID") -> pd.DataFrame:
+    """
+    Pandas pipe function to log:
+    - The size of the dataframe.
+    - The number of uniques in column 'unique'.
+
+    Args:
+        df (pd.DataFrame): The dataframe to log.
+
+    Returns:
+        pd.DataFrame: The dataframe.
+
+    Example:
+    ```python
+    # Apply the log_size function to a DataFrame
+    df = df.pipe(log_size)
+    ```
+    """
+    logger.info(f"Shape {df.shape} | " + f"Unique '{unique}': {df[unique].nunique()}")
+    return df

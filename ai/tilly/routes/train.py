@@ -12,7 +12,7 @@ from tilly.services.dashboard import update_dashboard
 router = APIRouter()
 
 
-def wrapper(session):
+def training_flow(session):
     training_data: dict[str, DataFrame] = crud.retrieve_data(session, TrainingTimeslots)
     data_results: dict[str, DataFrame] = train_models(training_data)
     update_dashboard(data_results)
@@ -24,6 +24,6 @@ def train(
     background_tasks: BackgroundTasks,
     session: Session = Depends(get_session),
 ):
-    background_tasks.add_task(wrapper, session)
+    background_tasks.add_task(training_flow, session)
     logger.info("Training sequence initialized")
     return {"message": "Training sequence initialized"}
