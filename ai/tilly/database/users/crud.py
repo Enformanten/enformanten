@@ -1,7 +1,8 @@
 """
-Asynchronous Database Connection and Session Script
+Asynchronous Database Connection and Session for user CRUD Operations.
 
-This script defines an asynchronous database connection and session for user data.
+Defines an asynchronous database connection and session for user data.
+Also defines a function to create the database and tables on startup.
 """
 
 from typing import AsyncGenerator
@@ -11,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from tilly.config import USER_DATABASE_URL
 from tilly.database.users.models import Base
+
 
 # Create an asynchronous database engine
 engine = create_async_engine(
