@@ -66,6 +66,7 @@ jobs:
     - name: Build and push container image to registry
       uses: docker/build-push-action@v5
       with:
+        context: ./ai
         push: true
         tags: ${{ env.AZ_IMAGE_TAG }}
         file: ./ai/Dockerfile
