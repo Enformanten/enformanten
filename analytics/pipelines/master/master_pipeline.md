@@ -6,7 +6,7 @@ It firstly updates the date table in datebase to always contain dates until toda
 
 Finally it runs the AI-model for predicting room usage before also updating that persisted table of output from the model.
 
-![Alt text](../assets/PL_MASTER.png)
+![Alt text](../assets/PL_MASTERv2.png)
 
 # Config
 The pipeline requires all the needed configuration of linked services:
