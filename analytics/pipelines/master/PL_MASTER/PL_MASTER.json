@@ -6,7 +6,7 @@
             "type": "string",
             "metadata": "Data Factory name"
         },
-        "LS_BOOKINGS_BLOB": {
+        "LS_BLOB": {
             "type": "string"
         },
         "LS_SNOWFLAKE": {
@@ -935,7 +935,7 @@
                                         "enableStaging": true,
                                         "stagingSettings": {
                                             "linkedServiceName": {
-                                                "referenceName": "[parameters('LS_BOOKINGS_BLOB')]",
+                                                "referenceName": "[parameters('LS_BLOB')]",
                                                 "type": "LinkedServiceReference"
                                             },
                                             "path": "bookings/favrskov"
@@ -2692,7 +2692,7 @@
             "apiVersion": "2018-06-01",
             "properties": {
                 "linkedServiceName": {
-                    "referenceName": "[parameters('LS_BOOKINGS_BLOB')]",
+                    "referenceName": "[parameters('LS_BLOB')]",
                     "type": "LinkedServiceReference"
                 },
                 "parameters": {
@@ -2729,7 +2729,7 @@
             "apiVersion": "2018-06-01",
             "properties": {
                 "linkedServiceName": {
-                    "referenceName": "[parameters('LS_BOOKINGS_BLOB')]",
+                    "referenceName": "[parameters('LS_BLOB')]",
                     "type": "LinkedServiceReference"
                 },
                 "parameters": {
@@ -2795,7 +2795,7 @@
             "apiVersion": "2018-06-01",
             "properties": {
                 "linkedServiceName": {
-                    "referenceName": "[parameters('LS_BOOKINGS_BLOB')]",
+                    "referenceName": "[parameters('LS_BLOB')]",
                     "type": "LinkedServiceReference"
                 },
                 "parameters": {
@@ -2848,7 +2848,7 @@
             "apiVersion": "2018-06-01",
             "properties": {
                 "linkedServiceName": {
-                    "referenceName": "[parameters('LS_BOOKINGS_BLOB')]",
+                    "referenceName": "[parameters('LS_BLOB')]",
                     "type": "LinkedServiceReference"
                 },
                 "parameters": {
@@ -2917,7 +2917,7 @@
             "apiVersion": "2018-06-01",
             "properties": {
                 "linkedServiceName": {
-                    "referenceName": "[parameters('LS_BOOKINGS_BLOB')]",
+                    "referenceName": "[parameters('LS_BLOB')]",
                     "type": "LinkedServiceReference"
                 },
                 "parameters": {
@@ -2970,7 +2970,7 @@
             "apiVersion": "2018-06-01",
             "properties": {
                 "linkedServiceName": {
-                    "referenceName": "[parameters('LS_BOOKINGS_BLOB')]",
+                    "referenceName": "[parameters('LS_BLOB')]",
                     "type": "LinkedServiceReference"
                 },
                 "parameters": {
@@ -3042,7 +3042,7 @@
             "apiVersion": "2018-06-01",
             "properties": {
                 "linkedServiceName": {
-                    "referenceName": "[parameters('LS_BOOKINGS_BLOB')]",
+                    "referenceName": "[parameters('LS_BLOB')]",
                     "type": "LinkedServiceReference"
                 },
                 "parameters": {
@@ -3298,7 +3298,7 @@
             "apiVersion": "2018-06-01",
             "properties": {
                 "linkedServiceName": {
-                    "referenceName": "[parameters('LS_BOOKINGS_BLOB')]",
+                    "referenceName": "[parameters('LS_BLOB')]",
                     "type": "LinkedServiceReference"
                 },
                 "parameters": {

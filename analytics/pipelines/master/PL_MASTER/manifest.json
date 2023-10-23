@@ -9,7 +9,7 @@
     ],
     "requires": {
         "linkedservices": {
-            "LS_BOOKINGS_BLOB": {
+            "LS_BLOB": {
                 "supportTypes": [
                     "AzureBlobStorage"
                 ]
