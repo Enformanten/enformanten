@@ -45,6 +45,13 @@ OUTPUT_COLUMNS = ["ID", "KOMMUNE", "DATE", "TIME", "ANOMALY_SCORE", "IN_USE"]
 
 SNOWFLAKE_CREDENTIALS = config("SNOWFLAKE_CREDENTIALS", cast=literal_eval)
 
+# Define your Snowflake connection parameters
+SNOWFLAKE_URL = (
+    "snowflake://{user}:{password}@{account}"
+    "/{database}/{schema}?warehouse={warehouse}&role={role}"
+).format(**config("SNOWFLAKE_CREDENTIALS", cast=literal_eval))
+
+
 ################
 # MODEL
 ################

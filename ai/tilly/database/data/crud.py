@@ -6,13 +6,12 @@ to the data pipelines of Enformanten.
 from loguru import logger
 from sqlalchemy.orm import Session
 import pandas as pd
-from snowflake.connector.pandas_tools import pd_writer
 
 from tilly.utils.logger import log_size
-from tilly.config import SCORED_TABLE_NAME, OUTPUT_COLUMNS
+from tilly.config import OUTPUT_COLUMNS
 
 
-def retrieve_data(session: Session, table: object) -> dict[str, pd.DataFrame]:
+def retrieve_data(session: Session, table_name: object) -> dict[str, pd.DataFrame]:
     """
     Retrieve all timeslot data from the given table
     using SQLAlchemy. The data is assigned a unique
@@ -57,16 +56,19 @@ def retrieve_data(session: Session, table: object) -> dict[str, pd.DataFrame]:
         print(f"Data for room {room_id}:{room_data.head()}")
     ```
     """
-    logger.debug(f"Retrieving data from {table.__tablename__}")
+    logger.debug(f"Retrieving data from {table_name}")
 
-    # debug tools:
-    query = session.query(table).limit(1000).statement
+    # debug with:
+    # query = session.query(table).limit(1000).statement
     # query = session.query(table).statement
+    # query = session.table(NAME).to_pandas()
 
     data = {
         school_room: df
         for school_room, df in (
-            pd.read_sql(query, session.bind)
+            session.table(f'"{table_name}"')
+            .limit(1000)
+            .to_pandas()
             .assign(SKOLE_ID=lambda d: d.SKOLE + "_" + d.ID)
             .pipe(log_size)
             .rename(str, axis="columns")
@@ -76,9 +78,7 @@ def retrieve_data(session: Session, table: object) -> dict[str, pd.DataFrame]:
     return data
 
 
-def push_data(
-    rooms: pd.DataFrame, session: Session, table: object | str = SCORED_TABLE_NAME
-) -> None:
+def push_data(rooms: pd.DataFrame, table_name, session) -> None:
     """
     Send data to a specified Snowflake table using the
     provided DataFrame.
@@ -113,12 +113,30 @@ def push_data(
     push_data(rooms, YourSnowflakeTable)
     ```
     """
-    logger.debug(f"Sending data to {table} ..")
-
-    rooms[OUTPUT_COLUMNS].to_sql(
-        table,
-        session.bind,
-        method=pd_writer,
-        if_exists="append",
-        index=False,
+    logger.debug(f"Sending {rooms.shape[0]} to {table_name} ..")
+    # session.execute(f"TRUNCATE TABLE {table_name}")
+    session.write_pandas(
+        rooms[OUTPUT_COLUMNS],
+        table_name,
+        overwrite=False,
+        quote_identifiers=False,
     )
+    # (
+    #     rooms[OUTPUT_COLUMNS]
+    #     .rename(lambda x: x.upper(), axis=1)
+    #     .to_sql(
+    #         table_name,
+    #         session.bind,
+    #         method=pd_writer,
+    #         if_exists="append",
+    #         index=False,
+    #     )
+    # )
+
+    # rooms[OUTPUT_COLUMNS].to_sql(
+    #     table_name,
+    #     session.bind,
+    #     method=pd_writer,
+    #     if_exists="append",
+    #     index=False,
+    # )

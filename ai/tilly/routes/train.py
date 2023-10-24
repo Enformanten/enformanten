@@ -13,14 +13,16 @@ router = APIRouter()
 
 
 def training_flow(session):
-    training_data: dict[str, DataFrame] = crud.retrieve_data(session, TrainingTimeslots)
+    training_data: dict[str, DataFrame] = crud.retrieve_data(
+        session, TrainingTimeslots.__tablename__
+    )
     data_results: dict[str, DataFrame] = train_models(training_data)
     update_dashboard(data_results)
 
 
 @router.post("/train")
 def train(
-    request: Request,
+    _: Request,
     background_tasks: BackgroundTasks,
     session: Session = Depends(get_session),
 ):

@@ -1,28 +1,26 @@
 """
 Snowflake Database Connection Script. 
 This script provides functions to establish and manage
-a connection to a Snowflake database using SQLAlchemy.
+a connection to a Snowflake database.
 """
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
 from typing import Generator
+from snowflake.snowpark import Session
 
-from tilly.config import SNOWFLAKE_CREDENTIALS, DB_ECHO
+from tilly.config import SNOWFLAKE_CREDENTIALS
 
 
-# Define your Snowflake connection parameters
-SNOWFLAKE_URL = (
-    "snowflake://{user}:{password}@{account}"
-    "/{database}/{schema}?warehouse={warehouse}&role={role}"
-).format(**SNOWFLAKE_CREDENTIALS)
+# # Create a synchronous engine
+# engine = create_engine(
+#     SNOWFLAKE_URL,
+#     echo=DB_ECHO,
+#     future=True,
+#     connect_args={
+#         'client_session_keep_alive': True,
+#     }
+# )
 
-# Create a synchronous engine
-engine = create_engine(
-    SNOWFLAKE_URL,
-    echo=DB_ECHO,
-    future=True,
-)
+# engine = Session.builder.configs(SNOWFLAKE_CREDENTIALS)
 
 
 def get_session() -> Generator[Session, None, None]:
@@ -41,5 +39,5 @@ def get_session() -> Generator[Session, None, None]:
     # The session is automatically closed when the 'with' block is exited.
     ```
     """
-    with Session(engine) as session:
+    with Session.builder.configs(SNOWFLAKE_CREDENTIALS).create() as session:
         yield session
