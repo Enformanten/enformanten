@@ -60,7 +60,7 @@ def retrieve_data(session: Session, table: object) -> dict[str, pd.DataFrame]:
     logger.debug(f"Retrieving data from {table.__tablename__}")
 
     # debug tools:
-    query = session.query(table).limit(1000).statement
+    query = session.query(table).statement  # .limit(1000)
     # query = session.query(table).statement
 
     data = {
