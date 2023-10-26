@@ -57,7 +57,7 @@ def predict(
     _: Request,
     session: Session = Depends(get_session),
     model_registry: ModelRegistry = Depends(get_current_registry),
-):
+) -> dict[str, str]:
     """
     Initiatie prediction of room-specific ML models for all rooms in data source.
     The endpoint triggers a process to retrieve the unscored rooms, scores them

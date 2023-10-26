@@ -7,7 +7,7 @@ from tilly.config import MODEL_PARAMS
 class Model:
     def __init__(
         self, estimated_usage: str | float = "auto", model_params=MODEL_PARAMS
-    ):
+    ) -> None:
         """Initializes the Model instance with the given parameters.
 
         Args:

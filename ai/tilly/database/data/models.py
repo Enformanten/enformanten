@@ -63,7 +63,7 @@ class TrainingTimeslots(DeclarativeBase):
     iaq = Column("IAQ", Float, nullable=True)
     booked = Column("BOOKET", Boolean, nullable=True)
 
-    def as_dict(self):
+    def as_dict(self) -> dict:
         """
         Convert the table row to a dictionary.
 
@@ -123,7 +123,7 @@ class UnscoredTimeslots(DeclarativeBase):
     iaq = Column("IAQ", Float, nullable=True)
     booked = Column("BOOKET", Boolean, nullable=True)
 
-    def as_dict(self):
+    def as_dict(self) -> dict:
         """
         Convert the table row to a dictionary.
 
@@ -152,7 +152,7 @@ class ScoredTimeslots(DeclarativeBase):
     ANOMALY_SCORE = Column("ANOMALY_SCORE", Float, nullable=True)
     IN_USE = Column("IN_USE", Boolean, nullable=True)
 
-    def as_dict(self):
+    def as_dict(self) -> dict:
         """
         Convert the table row to a dictionary.
 
