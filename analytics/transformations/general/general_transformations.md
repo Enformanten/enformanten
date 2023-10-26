@@ -4,6 +4,7 @@ The below schemas are for tables that have been used both directly in the visual
 
 ## Municipalities
 
+
 | Table              | Column |
 | --------------------- | ----------- |
 | 1_RAW_KOMMUNER_SKOLER  | KOMMUNE     |
@@ -25,7 +26,7 @@ The below schemas are for tables that have been used both directly in the visual
 
 ## Bookings
 
-| Table          | Column         |
+| Table               | Column         |
 | ------------------- | ------------------- |
 | 4_FEATURIZ_BOOKINGS | ID                  |
 | 4_FEATURIZ_BOOKINGS | DATO                |
@@ -196,6 +197,24 @@ These schemas for tables are the ones that have been created by using base table
 | 4_FEATURIZ_DRIFTOPTIMERING_TRAINING | IAQ            |
 | 4_FEATURIZ_DRIFTOPTIMERING_TRAINING | BOOKET         |
 | 4_FEATURIZ_DRIFTOPTIMERING_TRAINING | SKEMALAGT      |
+
+| Table                              | Column         |
+| ---------------------------------- | -------------- |
+| 4_FEATURIZ_DRIFTOPTIMERING_PREDICT | ID             |
+| 4_FEATURIZ_DRIFTOPTIMERING_PREDICT | KOMMUNE        |
+| 4_FEATURIZ_DRIFTOPTIMERING_PREDICT | SKOLE          |
+| 4_FEATURIZ_DRIFTOPTIMERING_PREDICT | DATE           |
+| 4_FEATURIZ_DRIFTOPTIMERING_PREDICT | TIME           |
+| 4_FEATURIZ_DRIFTOPTIMERING_PREDICT | DAYNAME        |
+| 4_FEATURIZ_DRIFTOPTIMERING_PREDICT | TIDSPUNKT_TYPE |
+| 4_FEATURIZ_DRIFTOPTIMERING_PREDICT | TYPE           |
+| 4_FEATURIZ_DRIFTOPTIMERING_PREDICT | NAVN           |
+| 4_FEATURIZ_DRIFTOPTIMERING_PREDICT | CO2            |
+| 4_FEATURIZ_DRIFTOPTIMERING_PREDICT | TEMP           |
+| 4_FEATURIZ_DRIFTOPTIMERING_PREDICT | MOTION         |
+| 4_FEATURIZ_DRIFTOPTIMERING_PREDICT | IAQ            |
+| 4_FEATURIZ_DRIFTOPTIMERING_PREDICT | BOOKET         |
+| 4_FEATURIZ_DRIFTOPTIMERING_PREDICT | SKEMALAGT      |
 
 | Table                              | Column         |
 | ---------------------------------- | -------------- |
