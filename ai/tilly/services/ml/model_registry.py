@@ -1,3 +1,19 @@
+"""
+Model Registry Module
+
+This module manages the model registry for machine learning models in the
+Tilly system. It contains utilities for training, predicting, and handling
+models that are specific to each room.
+
+The `ModelRegistry` is a singleton class that holds a dictionary of trained
+models, ensuring only one instance exists across the application.
+
+Modules:
+    - update_registry: Function to update the global model registry.
+    - get_current_registry: Function to fetch the current model registry.
+    - ModelRegistry: Singleton class to manage room-specific models.
+"""
+
 from threading import Lock
 from typing import Dict
 from tqdm import tqdm
@@ -5,10 +21,11 @@ from loguru import logger
 from pandas import DataFrame
 
 from tilly.services.ml.transformations import Transformer as T
-from tilly.services.ml.model import Model
 from tilly.config import FEATURES
+from tilly.services.ml.model import Model
 
 
+# Global Variables
 ####################
 # Allows us to access and
 # update the global model
@@ -18,68 +35,66 @@ current_registry = None
 
 
 def update_registry(new_registry):
-    """Updates the global model."""
+    """Updates the global model registry.
+
+    Args:
+        new_registry: The new model registry to set as global.
+    """
     global current_registry
     current_registry = new_registry
 
 
 def get_current_registry():
+    """Fetches the current model registry.
+
+    Returns:
+        The current model registry instance.
+    """
     return current_registry
 
 
-####################
-# Model class
+# ModelRegistry Class
 ####################
 
 
 class ModelRegistry:
+    """A singleton class representing the model registry.
 
-    """A singleton class that represents the model registry.
+    This class is responsible for training, fitting, predicting, and managing
+    each model. It holds a dictionary of models that are specific to each room.
 
-    This class is the core of the machine learning service.
-    It is responsible for training, fitting, and predicting
-    each model in the registry, including triggering the
-    pre- and post-processing steps.
+    Attributes:
+        - models (Dict[str, Model]): A dictionary holding room-specific
+            machine learning models.
 
-    The model registry holds a dictionary of models (the
-    in-memory registry of models) - Each model is specific
-    to a room.
-    - Once a model is trained, it is added to the
-    registry, or overwritten if a prior model exists for the
-    room.
-    - When a batch prediction initialized, the model is loaded
-    from the registry and used to make predictions.
-
-    The __new__ method and the _lock = Lock() are part of
-    implementing the Singleton pattern in a thread-safe way.
-    The Singleton pattern ensures that a class has only one
-    instance and provides a way to access that instance from
-    anywhere in the application"""
+    Methods:
+        - train: Train models based on new timeslot data.
+        - fit_predict: Train and predict on new room data.
+        - predict: Make predictions using pre-trained models.
+        - preprocess: Preprocesses the input data for each room.
+        - postprocess: Postprocesses the predicted data for each room.
+    """
 
     _instance = None
     _lock = Lock()
 
     def __new__(cls):
-        """
-        Singleton pattern implementation, ensuring only one instance exists.
-        """
+        """Ensures that only one instance of the class exists."""
         with cls._lock:
             if cls._instance is None:
                 cls._instance = super(ModelRegistry, cls).__new__(cls)
         return cls._instance
 
     def __init__(self):
-        """
-        Initialize the ModelRegistry instance with an empty models dictionary.
-        """
+        """Initializes an empty model dictionary."""
         self.models: Dict[str, Model] = {}
 
     def train(self, timeslots: dict[str, DataFrame]) -> None:
-        """
-        Train models on new timeslot data and store them in the registry.
+        """Train models based on new timeslot data and store them in the registry.
 
         Args:
-            timeslots (dict[str, DataFrame]): The timeslots data to train on, per room.
+            timeslots (dict[str, DataFrame]): The timeslots data to train on,
+                per room.
         """
         _preprocessed: dict[str, DataFrame] = self.preprocess(timeslots)
         room_results: dict[str, DataFrame] = self.fit_predict(_preprocessed)
@@ -88,7 +103,7 @@ class ModelRegistry:
         return _postprocessed
 
     def fit_predict(self, rooms: dict[str, DataFrame]) -> Dict[str, DataFrame]:
-        """Train models on new room data and make predictions.
+        """Train and predict on new room data.
 
         Args:
             rooms (dict[str, DataFrame]): Room data to fit and predict on.
@@ -114,8 +129,7 @@ class ModelRegistry:
         return output
 
     def predict(self, rooms: dict[str, DataFrame]) -> dict[str, DataFrame]:
-        """
-        Make predictions using the pre-trained models in the registry.
+        """Make predictions using pre-trained models in the registry.
 
         Args:
             rooms (dict[str, DataFrame]): Room data to predict on.

@@ -1,3 +1,11 @@
+"""
+Prediction Endpoint for Tilly Service
+
+This module contains a FastAPI router for serving an endpoint that performs
+predictions based on unscored timeslots. The data is processed, predicted,
+and then stored back into the database as scored timeslots.
+"""
+
 from fastapi import Depends, APIRouter, Request
 from sqlalchemy.orm import Session
 from pandas import DataFrame
@@ -9,17 +17,27 @@ from tilly.database.data.db import get_session
 from tilly.services.ml import ModelRegistry, get_current_registry, Transformer
 
 
-def prediction_flow(session, model):
-    """Runs the prediction flow
+def prediction_flow(session: Session, model: ModelRegistry) -> None:
+    """
+    Run the Prediction Workflow.
+
+    This function orchestrates the steps for the prediction workflow, including
+    data retrieval, prediction, and data storage.
 
     Args:
-        session (Session): Snowpark session
-        model (Model): Model
+        session (Session): SQLAlchemy session to the Snowflake database.
+        model (ModelRegistry): Machine Learning model for performing the predictions.
 
-    Returns:
-        dict[str, DataFrame]: Scored rooms
+    Examples:
+        ```python
+        from tilly.database.data.db import get_session
+        from tilly.services.ml import get_current_registry
+
+        with get_session() as session:
+            model_registry = get_current_registry()
+            prediction_flow(session, model_registry)
+        ```
     """
-
     rooms: dict[str, DataFrame] = crud.retrieve_data(
         session, UnscoredTimeslots.__tablename__
     )
@@ -30,6 +48,7 @@ def prediction_flow(session, model):
     )
 
 
+# Initialize FastAPI router
 router = APIRouter()
 
 
@@ -39,7 +58,35 @@ def predict(
     session: Session = Depends(get_session),
     model_registry: ModelRegistry = Depends(get_current_registry),
 ):
-    """Hello!"""
+    """
+    Prediction Endpoint.
+
+    This endpoint triggers the prediction workflow. It retrieves the unscored
+    rooms, scores them using a machine learning model, and stores the scored data
+    back into the database.
+
+    Args:
+        _: The FastAPI request object. This argument is currently not used.
+        session (Session, optional): SQLAlchemy session. Defaults to a new
+            session from `get_session`.
+        model_registry (ModelRegistry, optional): ML model registry. Defaults to
+            the current model from `get_current_registry`.
+
+    Returns:
+        dict: A message indicating the completion status of the scoring sequence.
+
+    Examples:
+        ```bash
+        curl -X POST http://localhost:8000/predict/
+        ```
+
+        Output:
+        ```json
+        {
+            "message": "Scoring sequence completed."
+        }
+        ```
+    """
     logger.debug("Predict endpoint called")
     if model_registry:
         prediction_flow(session, model_registry)

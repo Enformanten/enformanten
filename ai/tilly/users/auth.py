@@ -1,3 +1,46 @@
+"""User Authentication Module for Tilly
+
+This module provides utilities for user authentication and session management 
+using FastAPI and JWT (JSON Web Tokens). It uses SQLAlchemy to interact with the
+user database.
+
+Main Components:
+    - get_user_db: An asynchronous function that yields the SQLAlchemyUserDatabase
+        instance tied to the user model.
+    
+    - UserManager: A class inheriting from BaseUserManager and UUIDIDMixin tha
+        provides additional functionalities like handling events after user
+        registration. It uses a secret token for both password reset and email
+        verification.
+    
+    - get_user_manager: An asynchronous function that yields an instance of
+        UserManager. It depends on get_user_db.
+    
+    - get_jwt_strategy: A function that returns an instance of JWTStrategy, with
+        the secret and lifetime set.
+    
+    - auth_backend: An instance of AuthenticationBackend, utilizing the JWT 
+        strategy and bearer token transport.
+
+    - fastapi_users: An instance of FastAPIUsers that is initialized with the
+        UserManager and authentication backend. This is the core utility for 
+        user operations like login, registration, and more.
+    
+    - current_active_user: A dependency that fetches the currently active user.
+
+Logging:
+    User-related events such as successful registration are logged using the 
+    loguru logger.
+
+Example:
+    >>> from tilly.users.auth import fastapi_users, current_active_user
+    >>> # Inside FastAPI route
+    >>> @app.get("/secure-route", dependencies=[Depends(current_active_user)])
+    >>> def secure_route():
+    >>>     return {"message": "You have access to this route"}
+
+"""
+
 import uuid
 from typing import Optional
 from loguru import logger
