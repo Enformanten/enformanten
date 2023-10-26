@@ -14,10 +14,8 @@ config.cfg
 ai/tilly/dashboard/plots
 users.db
 .python-version
-ai/notebooks/*.pynb
 
 # mkdocs documentation
 site/
 ai/data/*
 ai/results/*
-ai/notebooks/model.ipynb

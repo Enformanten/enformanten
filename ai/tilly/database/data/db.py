@@ -1,45 +1,52 @@
 """
-Snowflake Database Connection Script. 
-This script provides functions to establish and manage
-a connection to a Snowflake database using SQLAlchemy.
+Snowflake Database Connection Script
+
+This module contains functions for establishing and managing connections
+to a Snowflake database. It relies on the `snowflake.snowpark` package
+to handle the actual database operations.
 """
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
 from typing import Generator
-
-from tilly.config import SNOWFLAKE_CREDENTIALS, DB_ECHO
-
-
-# Define your Snowflake connection parameters
-SNOWFLAKE_URL = (
-    "snowflake://{user}:{password}@{account}"
-    "/{database}/{schema}?warehouse={warehouse}&role={role}"
-).format(**SNOWFLAKE_CREDENTIALS)
-
-# Create a synchronous engine
-engine = create_engine(
-    SNOWFLAKE_URL,
-    echo=DB_ECHO,
-    future=True,
-)
+from snowflake.snowpark import Session
+from tilly.config import SNOWFLAKE_CREDENTIALS
 
 
 def get_session() -> Generator[Session, None, None]:
     """
-    Get a SQLAlchemy session for interacting with the Snowflake database.
+    Get a Snowflake Session for Database Interactions.
+
+    This function yields a Snowflake session for interacting with the
+    Snowflake database. The session is yielded as a generator and
+    should be used within a 'with' context to ensure
+    that resources are managed appropriately.
 
     Yields:
-        Generator[Session, None, None]: A generator yielding SQLAlchemy sessions.
-            The session should be used within a 'with' context.
+        Generator[Session, None, None]: A generator yielding a Snowflake
+            session object. The session is automatically closed when exiting
+            the 'with' context.
 
-    Example:
-    ```python
-    with get_session() as session:
-        # Perform database operations using the 'session' object
-        result = session.query(MyTable).filter_by(column_name='value').all()
-    # The session is automatically closed when the 'with' block is exited.
-    ```
+    Examples:
+        ```python
+        from your_module import MyTable  # Replace with actual table class
+
+        with get_session() as session:
+            # Perform database operations using the 'session' object
+            # Replace 'MyTable' and 'column_name' with actual table and column
+            result = session.query(MyTable).filter_by(column_name='value').all()
+
+        # The session is automatically closed when the 'with' block is exited.
+        ```
     """
-    with Session(engine) as session:
+    with Session.builder.configs(SNOWFLAKE_CREDENTIALS).create() as session:
         yield session
+
+
+def refresh_session(retry_state):
+    """Create a new Snowflake session if an error occurs.
+    using tenacity's before_retry hook"""
+    old_session = retry_state.kwargs.get("session")
+    if old_session:
+        old_session.close()  # Explicitly close the old session
+
+    with get_session() as new_session:
+        retry_state.kwargs["session"] = new_session

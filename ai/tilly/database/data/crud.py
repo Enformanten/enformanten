@@ -1,72 +1,71 @@
 """
-Data-related CRUD operations. Everything that deals with IO
-to the data pipelines of Enformanten.
+Module for data-related CRUD operations
+
+This module contains functions that handle CRUD 
+(Create, Read, Update, Delete)
+operations related to the data pipelines of Enformanten.
 """
 
 from loguru import logger
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import ProgrammingError
+from tenacity import retry, retry_if_exception_type, stop_after_attempt
 import pandas as pd
-from snowflake.connector.pandas_tools import pd_writer
 
 from tilly.utils.logger import log_size
-from tilly.config import SCORED_TABLE_NAME, OUTPUT_COLUMNS
+from tilly.config import OUTPUT_COLUMNS
+from tilly.database.data.db import refresh_session
 
 
-def retrieve_data(session: Session, table: object) -> dict[str, pd.DataFrame]:
+def retrieve_data(session: Session, table_name: str) -> dict[str, pd.DataFrame]:
     """
-    Retrieve all timeslot data from the given table
-    using SQLAlchemy. The data is assigned a unique
-    ID based on the school and room ID and is then
-    grouped by this ID, resulting in a dictionary of
-    DataFrames where each DataFrame corresponds to a
-    room.
+    Retrieve Data from a Table and Group by School and Room IDs.
+
+    This function retrieves data from a specified table and groups it by
+        a unique identifier
+    generated using the 'SKOLE' and 'ID' fields from the table. Each group
+        of data is stored in a
+    DataFrame, and these DataFrames are then stored in a dictionary.
 
     Args:
-        session (Session): The SQLAlchemy session to
-            use.
-        table (object): The SQLAlchemy table to
-            retrieve data from.
+        session (Session): The SQLAlchemy session used to interact with
+            the database.
+        table_name (str): The name of the table from which to retrieve data.
 
     Returns:
-        dict[str, pd.DataFrame]: A dictionary of
-            DataFrames, where each DataFrame
-            corresponds to a room.
+        dict[str, pd.DataFrame]: A dictionary where each key is a unique
+            identifier for a room, and the
+        associated value is a DataFrame containing the data for that room.
 
-    Example:
-    ```python
-    from sqlalchemy.orm import Session
-    from your_module import YourTable  # SQLAlchemy
-    import pandas as pd
+    Examples:
+        ```python
+        from sqlalchemy.orm import Session
+        import pandas as pd
 
-    # Create an SQLAlchemy session
-    # (you should initialize your session as needed)
-    session = Session()
+        # Initialize SQLAlchemy session
+        session = Session()
 
-    # Replace 'YourTable' with the actual table you
-    # want to retrieve data from
-    data = retrieve_data(session, YourTable)
+        # Example table name
+        table_name = "YourTableName"
 
-    # Access data for a specific room by its unique ID
-    # (school ID + room ID)
-    room_id = 'School123_Room456'
-    room_data = data.get(room_id)
+        # Retrieve and group data
+        data = retrieve_data(session, table_name)
 
-    if room_data is not None:
-        # Now you can work with the DataFrame for the
-        # specific room
-        print(f"Data for room {room_id}:{room_data.head()}")
-    ```
+        # Access a specific room's data using its unique identifier
+        room_id = "School123_Room456"
+        room_data = data.get(room_id)
+
+        if room_data is not None:
+            logger.debug(f"Data for room {room_id}:\n{room_data.head()}")
+        ```
     """
-    logger.debug(f"Retrieving data from {table.__tablename__}")
-
-    # debug tools:
-    query = session.query(table).statement
-    # query = session.query(table).limit(1000).statement
+    logger.debug(f"Retrieving data from {table_name}")
 
     data = {
         school_room: df
         for school_room, df in (
-            pd.read_sql(query, session.bind)
+            session.table(f'"{table_name}"')
+            .to_pandas()
             .assign(SKOLE_ID=lambda d: d.SKOLE + "_" + d.ID)
             .pipe(log_size)
             .rename(str, axis="columns")
@@ -76,49 +75,60 @@ def retrieve_data(session: Session, table: object) -> dict[str, pd.DataFrame]:
     return data
 
 
-def push_data(
-    rooms: pd.DataFrame, session: Session, table: object | str = SCORED_TABLE_NAME
-) -> None:
+@retry(
+    stop=stop_after_attempt(3),
+    retry=retry_if_exception_type(ProgrammingError),
+    retry_error_callback=refresh_session,
+)
+def push_data(rooms: pd.DataFrame, table_name: str, session: Session) -> None:
     """
-    Send data to a specified Snowflake table using the
-    provided DataFrame.
+    Push Data to a Snowflake Table.
+
+    This function pushes a DataFrame to a specified Snowflake table.
+    If the operation fails due to a ProgrammingError, the function
+    will attempt to retry the operation with a new session.
 
     Args:
-        rooms (pd.DataFrame): The DataFrame containing data
-            to be sent to the Snowflake table.
-        table (object | str): The target Snowflake table
-            name or SQLAlchemy table object. Defaults to
-            SCORED_TABLE_NAME if not specified.
+        rooms (pd.DataFrame): The DataFrame containing the data to push.
+        table_name (str): The name of the Snowflake table to which data
+            should be pushed.
+        session (Session): The SQLAlchemy session used for the operation.
 
     Returns:
-        None: This function does not return a value.
+        None
 
-    Example:
-    ```python
-    import pandas as pd
-    from your_module import YourSnowflakeTable
-    from your_module import SCORED_TABLE_NAME
-    from your_module import get_snowflake_conn, write_pandas
+    Examples:
+        ```python
+        import pandas as pd
+        from sqlalchemy.orm import Session
 
-    # Create or load the DataFrame 'rooms' with data to be
-    pushed to the Snowflake table
-    rooms = pd.DataFrame(...)  # preparation logic
+        # Initialize SQLAlchemy session
+        session = Session()
 
-    # Push the data to the Snowflake table using the default
-    # table name (SCORED_TABLE_NAME)
-    push_data(rooms)
+        # Example DataFrame
+        # (See OUTPUT_COLUMNS constant in tilly.config for the
+        # required column names)
+        rooms = pd.DataFrame({
+            'Column1': [1, 2, 3],
+            'Column2': ['a', 'b', 'c'],
+        })
 
-    # Alternatively, specify a different table name
-    # (replace 'YourSnowflakeTable' with your actual table)
-    push_data(rooms, YourSnowflakeTable)
-    ```
+        # Example table name
+        table_name = "YourSnowflakeTable"
+
+        # Push data to Snowflake table
+        push_data(rooms, table_name, session)
+        ```
     """
-    logger.debug(f"Sending data to {table} ..")
-
-    rooms[OUTPUT_COLUMNS].to_sql(
-        table,
-        session.bind,
-        method=pd_writer,
-        if_exists="append",
-        index=False,
-    )
+    try:
+        logger.debug(f"Sending {rooms.shape[0]} rows to {table_name} ..")
+        session.write_pandas(
+            rooms[OUTPUT_COLUMNS],
+            f'"{table_name}"',
+            overwrite=False,
+            quote_identifiers=False,
+        )
+    except ProgrammingError as e:
+        logger.debug(f"{e} - Retrying with new session ..")
+        session.close()  # Explicitly close the session then raise error for retry
+        raise e

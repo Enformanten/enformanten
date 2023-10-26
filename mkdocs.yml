@@ -65,3 +65,4 @@ plugins:
             show_signature_annotations: true
             show_source: true
             show_submodules: true
+  - pymdownx.arithmatex:
