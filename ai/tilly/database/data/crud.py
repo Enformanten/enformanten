@@ -65,7 +65,6 @@ def retrieve_data(session: Session, table_name: str) -> dict[str, pd.DataFrame]:
         school_room: df
         for school_room, df in (
             session.table(f'"{table_name}"')
-            .limit(1000)
             .to_pandas()
             .assign(SKOLE_ID=lambda d: d.SKOLE + "_" + d.ID)
             .pipe(log_size)
