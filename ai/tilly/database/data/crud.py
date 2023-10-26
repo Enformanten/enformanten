@@ -9,11 +9,12 @@ operations related to the data pipelines of Enformanten.
 from loguru import logger
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import ProgrammingError
+from tenacity import retry, retry_if_exception_type, stop_after_attempt
 import pandas as pd
 
 from tilly.utils.logger import log_size
 from tilly.config import OUTPUT_COLUMNS
-from tilly.database.data.db import get_session
+from tilly.database.data.db import refresh_session
 
 
 def retrieve_data(session: Session, table_name: str) -> dict[str, pd.DataFrame]:
@@ -55,7 +56,7 @@ def retrieve_data(session: Session, table_name: str) -> dict[str, pd.DataFrame]:
         room_data = data.get(room_id)
 
         if room_data is not None:
-            print(f"Data for room {room_id}:\n{room_data.head()}")
+            logger.debug(f"Data for room {room_id}:\n{room_data.head()}")
         ```
     """
     logger.debug(f"Retrieving data from {table_name}")
@@ -75,6 +76,11 @@ def retrieve_data(session: Session, table_name: str) -> dict[str, pd.DataFrame]:
     return data
 
 
+@retry(
+    stop=stop_after_attempt(3),
+    retry=retry_if_exception_type(ProgrammingError),
+    retry_error_callback=refresh_session,
+)
 def push_data(rooms: pd.DataFrame, table_name: str, session: Session) -> None:
     """
     Push Data to a Snowflake Table.
@@ -101,6 +107,8 @@ def push_data(rooms: pd.DataFrame, table_name: str, session: Session) -> None:
         session = Session()
 
         # Example DataFrame
+        # (See OUTPUT_COLUMNS constant in tilly.config for the
+        # required column names)
         rooms = pd.DataFrame({
             'Column1': [1, 2, 3],
             'Column2': ['a', 'b', 'c'],
@@ -122,7 +130,6 @@ def push_data(rooms: pd.DataFrame, table_name: str, session: Session) -> None:
             quote_identifiers=False,
         )
     except ProgrammingError as e:
-        session.close()
-        logger.info(f"{e} - Retrying with new session ..")
-        with get_session() as new_session:
-            push_data(rooms, table_name, new_session)
+        logger.debug(f"{e} - Retrying with new session ..")
+        session.close()  # Explicitly close the session then raise error for retry
+        raise e

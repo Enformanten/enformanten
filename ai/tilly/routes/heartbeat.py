@@ -25,27 +25,34 @@ def heartbeat(_: Request):
     which is set during a GitHub Actions job.
 
     Args:
+
         request (Request): The FastAPI request object. This argument is ignored but
             included for potential future use.
 
     Returns:
+
         dict: A dictionary containing the version information, with key "version" and
             value as the short version of the git hash of the last commit.
 
+
     Examples:
+
         ```bash
         curl http://localhost:8000/heartbeat/
         ```
 
-        Output:
+    Output:
+
         ```json
         {
-            "version": "abc123"  # Replace with the actual git hash short version
+            "version": "abc123"  # The git hash short version
         }
         ```
 
     Note:
+
         The `GIT_METADATA` environment variable must be set, usually during a
         GitHub Actions job, for this endpoint to return accurate version information.
+        If run locally, the version will be set to "local".
     """
     return {"version": GIT_METADATA}

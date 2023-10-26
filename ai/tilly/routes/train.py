@@ -46,20 +46,25 @@ def train(
     session: Session = Depends(get_session),
 ):
     """
-    Initiate Machine Learning Model Training.
+    Initiate training of room-specific ML models for all rooms in data source.
 
-    This endpoint initiates the machine learning model training sequence by
-    adding the `training_flow` function to the background tasks.
+    Calls the `training_flow` function as a async background task.
+
+    **NOTE**: Authentication is required for this endpoint.
 
     Args:
-        _: Request: FastAPI Request object. Not used, but kept for FastAPI
+
+        request: Request: FastAPI Request object. Not used, but kept for FastAPI
             dependency injection.
+
         background_tasks: FastAPI BackgroundTasks for running functions in the
             background.
+
         session: SQLAlchemy Session object for database interactions
             (injected via FastAPI's dependency system).
 
     Returns:
+
         dict: A dictionary containing a message indicating that the training
             sequence has been initialized.
 

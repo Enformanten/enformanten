@@ -59,28 +59,36 @@ def predict(
     model_registry: ModelRegistry = Depends(get_current_registry),
 ):
     """
-    Prediction Endpoint.
+    Initiatie prediction of room-specific ML models for all rooms in data source.
+    The endpoint triggers a process to retrieve the unscored rooms, scores them
+    using the designated room-specific machine learning model, and stores the
+    scored data back into the database.
 
-    This endpoint triggers the prediction workflow. It retrieves the unscored
-    rooms, scores them using a machine learning model, and stores the scored data
-    back into the database.
+    Calls the `prediction_flow` function as a async background task.
+
+    **NOTE**: Authentication is required for this endpoint.
 
     Args:
-        _: The FastAPI request object. This argument is currently not used.
+
+        request: The FastAPI request object. This argument is currently not used.
+
         session (Session, optional): SQLAlchemy session. Defaults to a new
             session from `get_session`.
+
         model_registry (ModelRegistry, optional): ML model registry. Defaults to
             the current model from `get_current_registry`.
 
     Returns:
+
         dict: A message indicating the completion status of the scoring sequence.
+
 
     Examples:
         ```bash
         curl -X POST http://localhost:8000/predict/
         ```
 
-        Output:
+    Output:
         ```json
         {
             "message": "Scoring sequence completed."

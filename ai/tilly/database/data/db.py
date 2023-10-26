@@ -39,3 +39,14 @@ def get_session() -> Generator[Session, None, None]:
     """
     with Session.builder.configs(SNOWFLAKE_CREDENTIALS).create() as session:
         yield session
+
+
+def refresh_session(retry_state):
+    """Create a new Snowflake session if an error occurs.
+    using tenacity's before_retry hook"""
+    old_session = retry_state.kwargs.get("session")
+    if old_session:
+        old_session.close()  # Explicitly close the old session
+
+    with get_session() as new_session:
+        retry_state.kwargs["session"] = new_session
