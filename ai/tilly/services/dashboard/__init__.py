@@ -81,7 +81,7 @@ def process_for_dashboard(rooms: dict[str, pd.DataFrame]) -> dict[str, pd.DataFr
     return output
 
 
-def save_figures(named_plots) -> None:
+def save_figures(named_plots: dict[tuple[str, str, str], object]) -> None:
     """
     Save Figures to Disk
 
@@ -96,7 +96,7 @@ def save_figures(named_plots) -> None:
         fig.write_html(f"{PLOTS_DIR}/{municipality}/{school}/{room_id}.html")
 
 
-def update_dashboard(plot_data: list[str, pd.DataFrame]) -> None:
+def update_dashboard(plot_data: dict[str, pd.DataFrame]) -> None:
     """
     Update Dashboard
 
@@ -104,8 +104,8 @@ def update_dashboard(plot_data: list[str, pd.DataFrame]) -> None:
     generated plots.
 
     Args:
-        plot_data (list[str, pd.DataFrame]): List containing room data as
-        Pandas DataFrames.
+        plot_data (dict[str, pd.DataFrame]): dict containing room data as
+        Pandas DataFrames, indexed by room name.
 
     Side Effects:
         - Directories for storing plots may be created.

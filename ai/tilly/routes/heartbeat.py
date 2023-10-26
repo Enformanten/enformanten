@@ -16,7 +16,7 @@ router = APIRouter()
 
 
 @router.get("/heartbeat/")
-def heartbeat(_: Request):
+def heartbeat(_: Request) -> dict:
     """
     Heartbeat Endpoint for Health Check and Versioning.
 

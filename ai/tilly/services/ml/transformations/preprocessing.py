@@ -143,9 +143,13 @@ class Preprocessor:
 
         Args:
             df (pd.DataFrame): DataFrame to filter
-            named_bounds (dict[str, tuple[float | None, float | None]]): Dictionary
+            bounds (dict[str, tuple[float | None, float | None]]): Dictionary
                 of column names and their lower and upper bounds. If a bound is None,
-                then it is not applied."""
+                then it is not applied.
+
+        Returns:
+            df (pd.DataFrame): Filtered DataFrame
+        """
 
         mask = np.ones(df.shape[0], dtype=bool)
 

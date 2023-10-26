@@ -25,34 +25,6 @@ from tilly.config import FEATURES
 from tilly.services.ml.model import Model
 
 
-# Global Variables
-####################
-# Allows us to access and
-# update the global model
-####################
-
-current_registry = None
-
-
-def update_registry(new_registry):
-    """Updates the global model registry.
-
-    Args:
-        new_registry: The new model registry to set as global.
-    """
-    global current_registry
-    current_registry = new_registry
-
-
-def get_current_registry():
-    """Fetches the current model registry.
-
-    Returns:
-        The current model registry instance.
-    """
-    return current_registry
-
-
 # ModelRegistry Class
 ####################
 
@@ -203,3 +175,31 @@ class ModelRegistry:
         return {
             name: room.pipe(T.heuristics) for name, room in tqdm(predictions.items())
         }
+
+
+# Global Variables
+####################
+# Allows us to access and
+# update the global model
+####################
+
+current_registry = None
+
+
+def update_registry(new_registry: ModelRegistry):
+    """Updates the global model registry.
+
+    Args:
+        new_registry: The new model registry to set as global.
+    """
+    global current_registry
+    current_registry = new_registry
+
+
+def get_current_registry() -> ModelRegistry:
+    """Fetches the current model registry.
+
+    Returns:
+        The current model registry instance.
+    """
+    return current_registry

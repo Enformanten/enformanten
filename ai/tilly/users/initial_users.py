@@ -57,7 +57,7 @@ async def create_user(
     email: str,
     password: str,
     is_superuser: bool = False,
-):
+) -> None:
     """
     Asynchronously creates a new user.
 
@@ -94,7 +94,7 @@ async def create_user(
         logger.info(f"User {email} already exists")
 
 
-async def create_initial_users(users: list = USERS):
+async def create_initial_users(users: list = USERS) -> None:
     """
     Asynchronously creates initial users based on the provided list.
 

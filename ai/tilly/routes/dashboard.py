@@ -73,7 +73,7 @@ def create_plot_structure(root_path: Path) -> Optional[Dict]:
 
 
 @router.get("/plots_structure", response_model=Optional[Dict])
-def get_plots_structure():
+def get_plots_structure() -> Optional[Dict] | HTTPException:
     """
     Get Plot Directory Structure.
 
