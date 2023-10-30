@@ -15,7 +15,7 @@ If setup is wanted on a seperate instace of ADF it is needed to:
 
 The UI for using a template:
 
-![Alt text](./assets/Import_template.png)
+![Setup Template](./assets/Import_template.png)
 
 # Output / Storage
 

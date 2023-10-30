@@ -7,9 +7,9 @@ The frontend can be setup locally by downloading and using the template (.pbit)
 2. Import from template
 3. Insert Snowflake Server link
 
-![Alt text](assets/import_template.png)
+![Import template to PBI](./assets/import_template.png)
 
-![Alt text](assets/parameter.png)
+![Setup Parameters](./assets/parameter.png)
 
 ## Prerequistes
 
@@ -39,7 +39,9 @@ in
 
 # Datamodel
 
-![Alt text](assets/datamodel.jpg)
+The datamodel for the Power Bi dashboards are shown in both a figure and a table.
+
+![Datamodel](././assets/datamodel.jpg)
 
 | Relationship Id | Left side                                   | Cardinality | Right side                                           |
 | --------------- | ------------------------------------------- | ----------- | ---------------------------------------------------- | 
@@ -66,42 +68,44 @@ in
 
 # Pages
 
+The built dashboards/pages can be seen in examples below.
+
 ## Overview
 
-![Alt text](assets/Overview.png)
+![Overview](./assets/Overview.png)
 
 ## Energy Utilization
 
 ### Year
-![Alt text](assets/Energy_year.png)
+![Energy Utilization - Year](./assets/Energy_year.png)
 ### Vacations
-![Alt text](assets/Energy_vacations.png)
+![Energy Utilization - Vacations](./assets/Energy_vacations.png)
 ### Building Utilization
-![Alt text](assets/Energy_utilization.png)
+![Energy Utilization - Building Usage](./assets/Energy_utilization.png)
 ### Ideal Curve
-![Alt text](assets/Energy_idealcurve.png)
+![Energy Utilization - Ideal Curve](./assets/Energy_idealcurve.png)
 
 ## Vacation Closing
 
 ### Benchmark with last year
-![Alt text](assets/vacation_lastyear.png)
+![Vacation Closing - Year](./assets/vacation_lastyear.png)
 ### Benchmark with weekend
-![Alt text](assets/vacation_weekend.png)
+![Vacation Closing - Weekend](./assets/vacation_weekend.png)
 ### Benchmark with target
-![Alt text](assets/vacation_target.png)
+![Vacation Closing - Target](./assets/vacation_target.png)
 
 ## Passive Energy Usage
 
-![Alt text](assets/passive_energy.png)
+![Passive Energy Usage](./assets/passive_energy.png)
 
 ## Return Temperature
-![Alt text](assets/return_temperature.png)
+![Return Temperature](./assets/return_temperature.png)
 
 ## Cooling
-![Alt text](assets/cooling.png)
+![Cooling](./assets/cooling.png)
 ## Room Utilization
 
 ### Booking utilization
-![Alt text](assets/booking_util.png)
+![Booking utilization](./assets/booking_util.png)
 ### General utilization
-![Alt text](assets/general_util.png)
+![General utilization](./assets/general_util.png)

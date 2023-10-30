@@ -8,11 +8,11 @@ The loop in "PL_DMI_MASTER" starts a sub-pipeline "PL_DMI" that fetched the want
 API: https://confluence.govcloud.dk/display/FDAPI/Meteorological+Observation+Data
 
 ## Master
-![Alt text](../assets/PL_DMI_MASTER.png)
+![Pipeline](../assets/PL_DMI_MASTER.png)
 
 ## Sub-pipeline
 
-![Alt text](../assets/PL_DMI.png)
+![Pipeline](../assets/PL_DMI.png)
 
 # Config
 
