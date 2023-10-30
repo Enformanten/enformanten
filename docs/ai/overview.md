@@ -1,7 +1,18 @@
 # AI Room Utilization Model
-The AI Room Utilization Model (Tilly) (Formally, Driftsoptimeringsmodellen in Danish) uses Artificial Intelligence (AI) to detect whether a given room has been in use or not, based on IoT sensor data. The software solution behind the model is intended to be deployed as a cloud-based web application, accessible to an ETL data flow through an OAuth2-protected RESTful FastAPI engine. The figure below shows the overall architecture of the solution.
+The AI Room Utilization Model (Tilly) (Formally, Driftsoptimeringsmodellen in Danish) is a machine learning anomaly detection solution that uses sensor data to detect whether a given room has been in use (i.e. have had human activity) in a given time 15-minute time interval.<br> <br>
+The following sections provide an overview of the solution, including its architecture, components, and development environment. Please see 
 
-![Room Utilization Model Architecture](../assets/solution-architecture.png)
+- `algorithm` for a detailed description of the AI model and its implementation. 
+- `deployment` for a detailed description of the deployment process and the associated infrastructure.
+- `evaluation` for a detailed description of the evaluation process and the associated dashboard.
+- `reference` for code references and other resources.
+
+## Background
+The GTM Smart<sup>2</sup> AI signature project revolves around using AI and advanced analytics to extract actionable insights on energy use for schools across municipalities. Early on, the project group identified a bottleneck in the practical derivation of these insights: The available data did not provide a reliable measurement of whether a given room had been in use at a given time. To address this, the project group NTT DATA developed Tilly, a room utilization model, which is the subject of this documentation.
+
+
+
+![Room Utilization Model Architecture](./assets/solution-architecture.png)
 
 As evident from the figure above, the solution has multiple components even though the name suggests it's solely an AI model. These components are covered in the following section. Tilly integrates with Enformanten's data flow and the associated (Snowflake) database but is otherwise closed to traffic.
 
@@ -63,20 +74,5 @@ If the algorithm encounters a situation where there are zero total slots, it ret
 Business Implications
 This heuristic estimation serves as an informative prior for AI models aiming to predict room utilization. The model adjusts its expectations based on this heuristic, improving the overall accuracy and reliability of future predictions. This is especially valuable for optimizing room bookings and schedules, thereby leading to more efficient use of organizational resources.
 
-
-\( a^2 + b^2 = c^2 \)
-
-
-When calculating the estimated usage \( U \) for a given room, the formula used is:
-
-
-
-U = \min \left( \frac{{\text{Used Slots} \times \text{Usage Coefficient}}}{{\text{Total Slots}}}, \text{Max Usage} \right)
-    
-    where: 
-    \( \text{Used Slots} \) = Number of slots that are in use, which include times marked as either "Booked" or "Scheduled" according to the organizational schema.
-    \( \text{Usage Coefficient} \) = A scaling factor used to fine-tune the estimated usage rate. Its default value is set at 2.1.
-    \( \text{Total Slots} \) = Total number of slots in the given time period.
-    \( \text{Max Usage} \) = A heuristic upper limit set to ensure that the estimated usage of a room doesn't exceed this value, typically set at 0.4.
-    
+## Local development
 
