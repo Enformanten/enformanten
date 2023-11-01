@@ -8,7 +8,7 @@ The analytics part of the project has leveraged an existing platform built by NT
 
 The main output is data pipelines, transformations and a Power Bi Report
 
-![Overview](docs\analytics\frontend\assets\Overview.png)
+![Overview](./docs/analytics/frontend/assets/Overview.png)
 
 # AI
 
