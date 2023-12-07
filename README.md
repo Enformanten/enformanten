@@ -15,6 +15,6 @@ The AI Room Utilization Model (Formally, Driftsoptimeringsmodellen in Danish) is
 
 This functionality is wrapped in a FastAPI web application that exposes a REST API for querying the model. The model is deployed to Azure as a Docker container and is hosted on an Azure Web App - But the model can be deployed to any cloud provider that supports Docker containers.
 
-[output-example](./docs/ai/assets/output-example.png)
+![output-example](./docs/ai/assets/output-example.png)
 
 **NOTE:** The AI booking system (The second AI component in the project) is not included in this repository but in a separate repository under this organization.
